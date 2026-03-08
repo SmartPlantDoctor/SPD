@@ -1,0 +1,3584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Smart Plant Doctor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<style>
+/* ════════════════════════════════
+   CSS VARIABLES / THEME
+════════════════════════════════ */
+:root {
+  --primary:       #10B981;
+  --accent:        #059669;
+  --bg:            #F0FDF4;
+  --card:          #FFFFFF;
+  --text1:         #111827;
+  --text2:         #6B7280;
+  --border:        #D1FAE5;
+  --success:       #10B981;
+  --warn:          #F59E0B;
+  --error:         #EF4444;
+  --tab-h:         64px;
+  --radius:        16px;
+  --radius-sm:     10px;
+  --shadow:        0 4px 24px rgba(16,185,129,.12);
+  --shadow-modal:  0 24px 64px rgba(0,0,0,.22);
+  --transition:    .22s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"] {
+  --bg:    #0F1F17;
+  --card:  #1A2E22;
+  --text1: #F0FDF4;
+  --text2: #9CA3AF;
+  --border:#1E4D35;
+  --shadow:0 4px 24px rgba(0,0,0,.35);
+}
+
+/* ════════════════════════════════
+   RESET & BASE
+════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%; overflow: hidden;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text1);
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+input, textarea { font-family: inherit; outline: none; border: none; background: none; }
+img { display: block; max-width: 100%; }
+
+/* ════════════════════════════════
+   APP SHELL
+════════════════════════════════ */
+#app {
+  display: flex; flex-direction: column;
+  height: 100vh; max-width: 480px;
+  margin: 0 auto; position: relative;
+  background: var(--bg);
+  box-shadow: 0 0 80px rgba(0,0,0,.08);
+}
+
+/* ════════════════════════════════
+   SCREENS
+════════════════════════════════ */
+.screen {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  display: none; flex-direction: column;
+  padding: 20px 16px calc(var(--tab-h) + 24px);
+  scroll-behavior: smooth;
+}
+.screen.active { display: flex; animation: fadeSlide .28s ease; }
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.screen::-webkit-scrollbar { width: 3px; }
+.screen::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Screen header */
+.screen-header { padding: 18px 0 8px; }
+.screen-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.65rem; line-height: 1.2;
+  color: var(--text1); margin-bottom: 4px;
+}
+.screen-subtitle { font-size: .88rem; color: var(--text2); line-height: 1.5; }
+
+/* ════════════════════════════════
+   CARDS
+════════════════════════════════ */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card + .card { margin-top: 14px; }
+
+/* ════════════════════════════════
+   PHOTO SECTION (DiagnoseScreen)
+════════════════════════════════ */
+.photo-section { margin: 16px 0; }
+.photo-placeholder {
+  background: var(--card);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 40px 20px 32px;
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+.photo-placeholder::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 60% 40%, rgba(16,185,129,.06) 0%, transparent 65%);
+  pointer-events: none;
+}
+.photo-placeholder-icon {
+  font-size: 56px; color: var(--border);
+  display: block; margin-bottom: 10px;
+  filter: drop-shadow(0 4px 8px rgba(16,185,129,.15));
+}
+.placeholder-label {
+  font-size: .9rem; color: var(--text2);
+  margin-bottom: 22px; font-weight: 500;
+}
+.photo-buttons { display: flex; gap: 10px; justify-content: center; }
+.photo-btn {
+  display: flex; align-items: center; gap: 7px;
+  padding: 11px 20px; border-radius: 50px;
+  font-size: .88rem; font-weight: 600; color: #fff;
+  transition: var(--transition); position: relative; overflow: hidden;
+}
+.photo-btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,255,255,0); transition: background .2s;
+}
+.photo-btn:hover::after { background: rgba(255,255,255,.12); }
+.photo-btn:active { transform: scale(.97); }
+.photo-btn.camera { background: linear-gradient(135deg, var(--primary), #059669); box-shadow: 0 4px 14px rgba(16,185,129,.35); }
+.photo-btn.gallery { background: linear-gradient(135deg, #0284C7, #0369A1); box-shadow: 0 4px 14px rgba(2,132,199,.3); }
+.photo-btn .material-icons-round { font-size: 20px; }
+
+/* Preview */
+.photo-container { position: relative; border-radius: var(--radius); overflow: hidden; }
+.captured-photo { width: 100%; height: 220px; object-fit: cover; display: block; }
+.retake-btn {
+  position: absolute; bottom: 12px; right: 12px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 50px;
+  background: rgba(5,150,105,.9); color: #fff;
+  font-size: .82rem; font-weight: 600;
+  backdrop-filter: blur(8px);
+  transition: var(--transition);
+}
+.retake-btn:hover { background: var(--accent); }
+
+/* Hidden file inputs */
+.file-input { display: none; }
+
+/* ════════════════════════════════
+   ANALYZING STATE
+════════════════════════════════ */
+.analyzing-container {
+  display: none; flex-direction: column; align-items: center;
+  gap: 14px; padding: 28px; margin: 8px 0;
+  background: var(--card); border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.analyzing-container.show { display: flex; animation: fadeSlide .3s ease; }
+.spinner {
+  width: 44px; height: 44px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.analyzing-text { font-size: .9rem; color: var(--text2); font-weight: 500; }
+.analyzing-dots::after {
+  content: ''; animation: dots 1.4s steps(3, end) infinite;
+}
+@keyframes dots {
+  0%,20%  { content: ''; }
+  40%     { content: '.'; }
+  60%     { content: '..'; }
+  80%,100%{ content: '...'; }
+}
+
+/* ════════════════════════════════
+   SEARCH SECTION (DiagnoseScreen)
+════════════════════════════════ */
+.search-section { margin-top: 8px; }
+.section-label {
+  font-size: .82rem; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .6px;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.search-input-wrap {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  background: var(--card); border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); transition: border var(--transition);
+}
+.search-input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16,185,129,.1); }
+.search-input-wrap .material-icons-round { font-size: 20px; color: var(--text2); flex-shrink: 0; }
+.search-input {
+  flex: 1; font-size: .9rem; color: var(--text1);
+  background: transparent;
+}
+.search-input::placeholder { color: var(--text2); }
+
+.search-results { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.search-result-item {
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  background: var(--card); border: 1px solid var(--border);
+  cursor: pointer; transition: var(--transition);
+}
+.search-result-item:hover { border-color: var(--primary); transform: translateX(3px); }
+.search-result-name { font-size: .92rem; font-weight: 700; color: var(--text1); margin-bottom: 3px; }
+.search-result-symptoms { font-size: .78rem; color: var(--text2); margin-bottom: 4px; }
+.search-result-treatment { font-size: .78rem; color: var(--accent); font-weight: 600; }
+
+/* ════════════════════════════════
+   BOTTOM TAB BAR
+════════════════════════════════ */
+.tab-bar {
+  position: sticky; bottom: 0; left: 0; right: 0;
+  height: var(--tab-h);
+  display: flex; align-items: center;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 32px rgba(0,0,0,.06);
+  z-index: 50; flex-shrink: 0;
+  padding: 0 8px;
+}
+.tab-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 3px; padding: 8px 4px;
+  border-radius: var(--radius-sm); transition: var(--transition);
+  background: transparent; color: var(--text2);
+  position: relative;
+}
+.tab-btn .material-icons-round { font-size: 22px; transition: var(--transition); }
+.tab-btn .tab-label { font-size: .68rem; font-weight: 600; transition: var(--transition); }
+.tab-btn.active { color: var(--primary); }
+.tab-btn.active .material-icons-round { transform: scale(1.1); }
+.tab-btn::before {
+  content: ''; position: absolute; top: 4px;
+  width: 0; height: 3px; border-radius: 2px;
+  background: var(--primary); transition: width var(--transition);
+}
+.tab-btn.active::before { width: 24px; }
+.tab-btn:hover { background: rgba(16,185,129,.06); color: var(--primary); }
+
+/* ════════════════════════════════
+   MODAL
+════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(4px);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  width: 100%; max-width: 480px;
+  max-height: 90vh;
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  animation: slideUp .32s cubic-bezier(.34,1.2,.64,1);
+  box-shadow: var(--shadow-modal);
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+}
+.modal-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem; color: #fff;
+}
+.modal-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,.2); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition);
+}
+.modal-close:hover { background: rgba(255,255,255,.35); }
+.modal-close .material-icons-round { font-size: 18px; }
+
+.modal-body {
+  flex: 1; overflow-y: auto; padding: 20px;
+}
+.modal-body::-webkit-scrollbar { width: 3px; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.modal-footer {
+  padding: 14px 20px; flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 10px;
+}
+
+/* Confidence badge */
+.confidence-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+.disease-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem; color: var(--text1); line-height: 1.2;
+}
+.conf-badge {
+  padding: 5px 12px; border-radius: 20px;
+  font-size: .78rem; font-weight: 700; color: #fff;
+  display: flex; align-items: center; gap: 4px;
+}
+.conf-badge .material-icons-round { font-size: 14px; }
+.conf-high { background: var(--success); }
+.conf-med  { background: var(--warn); }
+
+/* Sections */
+.detail-section { margin-bottom: 18px; }
+.detail-section-title {
+  font-size: .75rem; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .7px;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 5px;
+}
+.detail-section-title .material-icons-round { font-size: 14px; color: var(--primary); }
+.list-item {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: .88rem; color: var(--text2); line-height: 1.5;
+  margin-bottom: 5px;
+}
+.list-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--primary); flex-shrink: 0;
+  margin-top: 6px;
+}
+.detail-text { font-size: .88rem; color: var(--text2); line-height: 1.65; }
+
+/* Modal photo */
+.modal-photo { width: 100%; height: 180px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 16px; }
+
+/* Buttons */
+.btn-primary {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 13px 20px; border-radius: 50px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff; font-size: .88rem; font-weight: 700;
+  box-shadow: 0 4px 14px rgba(16,185,129,.3);
+  transition: var(--transition);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+.btn-primary:active { transform: scale(.98); }
+.btn-primary .material-icons-round { font-size: 18px; }
+
+.btn-danger {
+  display: flex; align-items: center; gap: 6px;
+  padding: 13px 16px; border-radius: 50px;
+  background: rgba(239,68,68,.1); color: var(--error);
+  font-size: .88rem; font-weight: 700;
+  border: 1.5px solid rgba(239,68,68,.25);
+  transition: var(--transition);
+}
+.btn-danger:hover { background: rgba(239,68,68,.18); }
+.btn-danger .material-icons-round { font-size: 18px; }
+
+/* ════════════════════════════════
+   HISTORY SCREEN
+════════════════════════════════ */
+.history-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+
+.history-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; cursor: pointer;
+  transition: var(--transition);
+}
+.history-card:hover { transform: translateX(3px); box-shadow: 0 6px 24px rgba(16,185,129,.12); }
+
+.history-thumb {
+  width: 56px; height: 56px; border-radius: var(--radius-sm);
+  object-fit: cover; flex-shrink: 0;
+  background: var(--border); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.history-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.history-thumb .material-icons-round { font-size: 24px; color: var(--text2); }
+
+.history-info { flex: 1; min-width: 0; }
+.history-disease { font-size: .95rem; font-weight: 700; color: var(--text1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-date { font-size: .74rem; color: var(--text2); margin: 2px 0 5px; }
+.history-conf {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: .74rem; font-weight: 700;
+}
+.history-conf .material-icons-round { font-size: 13px; }
+.conf-green { color: var(--success); }
+.conf-yellow { color: var(--warn); }
+
+.history-chevron { color: var(--text2); flex-shrink: 0; }
+.history-chevron .material-icons-round { font-size: 20px; }
+
+/* Empty state */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 60px 20px; text-align: center; gap: 12px;
+}
+.empty-icon { font-size: 64px; color: var(--border); display: block; }
+.empty-text { font-size: .9rem; color: var(--text2); line-height: 1.6; max-width: 240px; }
+
+/* ════════════════════════════════
+   NOTES SECTION
+════════════════════════════════ */
+.notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.notes-edit-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(16,185,129,.1); color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition);
+}
+.notes-edit-btn:hover { background: rgba(16,185,129,.2); }
+.notes-edit-btn .material-icons-round { font-size: 15px; }
+
+.notes-textarea {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: .88rem; color: var(--text1);
+  background: var(--bg); resize: vertical; min-height: 90px;
+  line-height: 1.55; transition: border var(--transition);
+}
+.notes-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16,185,129,.1); }
+.notes-textarea::placeholder { color: var(--text2); }
+
+.btn-save-notes {
+  margin-top: 8px; padding: 9px 18px;
+  background: var(--primary); color: #fff;
+  border-radius: 50px; font-size: .82rem; font-weight: 700;
+  transition: var(--transition);
+}
+.btn-save-notes:hover { background: var(--accent); }
+
+.notes-display { font-size: .88rem; color: var(--text2); line-height: 1.65; font-style: italic; }
+
+/* ════════════════════════════════
+   TOP BAR (theme toggle)
+════════════════════════════════ */
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px 0;
+  flex-shrink: 0;
+}
+.app-logo { display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; }
+.logo-dot .material-icons-round { font-size: 16px; color: #fff; }
+.logo-text { font-family: 'DM Serif Display', serif; font-size: 1rem; color: var(--text1); }
+
+.theme-toggle {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--card); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow); transition: var(--transition);
+  color: var(--text2);
+}
+.theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
+.theme-toggle .material-icons-round { font-size: 18px; }
+
+/* ════════════════════════════════
+   DIVIDER
+════════════════════════════════ */
+.divider {
+  height: 1px; background: var(--border);
+  margin: 12px 0;
+}
+
+/* ════════════════════════════════
+   TOAST
+════════════════════════════════ */
+.toast {
+  position: fixed; bottom: calc(var(--tab-h) + 16px); left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1A2E22; color: #fff;
+  padding: 10px 20px; border-radius: 50px;
+  font-size: .85rem; font-weight: 600; white-space: nowrap;
+  opacity: 0; pointer-events: none; z-index: 200;
+  transition: all .3s ease; display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  max-width: calc(100vw - 40px);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast .material-icons-round { font-size: 16px; color: var(--primary); }
+
+/* ════════════════════════════════
+   STAT BAR (confidence visual)
+════════════════════════════════ */
+.stat-bar-wrap { margin-top: 8px; }
+.stat-bar-label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--text2); margin-bottom: 4px; }
+.stat-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.stat-bar-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  transition: width .8s cubic-bezier(.4,0,.2,1);
+}
+
+/* Scroll custom bar */
+#screen-diagnose, #screen-history {
+  scroll-padding-top: 20px;
+}
+
+/* ════════════════════════════════
+   RTL SUPPORT
+════════════════════════════════ */
+[dir="rtl"] .search-result-item:hover { transform: translateX(-3px); }
+[dir="rtl"] .history-card:hover       { transform: translateX(-3px); }
+[dir="rtl"] .retake-btn               { right: auto; left: 12px; }
+[dir="rtl"] .history-chevron .material-icons-round { transform: scaleX(-1); }
+[dir="rtl"] .tab-btn::before          { left: auto; right: 50%; transform: translateX(50%); }
+
+/* ════════════════════════════════
+   LANGUAGE PANEL
+════════════════════════════════ */
+.lang-panel {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.lang-panel.open { display: flex; animation: fadeIn .2s ease; }
+
+.lang-sheet {
+  width: 100%; max-width: 480px;
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  padding: 0 0 32px;
+  animation: slideUp .32s cubic-bezier(.34,1.2,.64,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,.18);
+}
+.lang-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 12px auto 0;
+}
+.lang-sheet-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.lang-sheet-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.05rem; color: var(--text1);
+}
+.lang-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(0,0,0,.06); color: var(--text2);
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition);
+}
+.lang-close:hover { background: rgba(0,0,0,.12); }
+.lang-close .material-icons-round { font-size: 17px; }
+
+.lang-options {
+  display: flex; gap: 10px; padding: 16px 20px 0;
+}
+.lang-opt {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 6px; padding: 14px 8px;
+  border-radius: var(--radius); cursor: pointer;
+  border: 2px solid var(--border); background: transparent;
+  transition: var(--transition); color: var(--text2);
+}
+.lang-opt .lang-flag  { font-size: 26px; line-height: 1; }
+.lang-opt .lang-name  { font-size: .78rem; font-weight: 700; }
+.lang-opt:hover       { border-color: var(--primary); color: var(--primary); background: rgba(16,185,129,.05); }
+.lang-opt.selected    { border-color: var(--primary); background: rgba(16,185,129,.08); color: var(--primary); }
+.lang-opt.selected .lang-name { color: var(--primary); }
+
+/* lang button in top-bar */
+.lang-toggle {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--card); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow); transition: var(--transition);
+  color: var(--text2); font-size: .78rem; font-weight: 800;
+  letter-spacing: -.5px;
+}
+.lang-toggle:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ════════════════════════════════
+   GARDEN SCREEN
+════════════════════════════════ */
+.garden-actions {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+  margin: 14px 0 20px;
+}
+.garden-action-btn {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 16px 8px;
+  background: var(--primary); border-radius: var(--radius);
+  color: #fff; font-size: .75rem; font-weight: 700;
+  text-align: center; line-height: 1.3;
+  transition: var(--transition); border: none; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(16,185,129,.3);
+}
+.garden-action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16,185,129,.4); }
+.garden-action-btn .material-icons-round { font-size: 26px; }
+.garden-action-btn.secondary {
+  background: rgba(16,185,129,.12);
+  color: var(--primary); box-shadow: none;
+  border: 1.5px solid rgba(16,185,129,.25);
+}
+.garden-action-btn.secondary:hover { background: rgba(16,185,129,.2); }
+
+.garden-section-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .9rem; font-weight: 700; color: var(--text1);
+  margin-bottom: 14px;
+}
+.garden-section-title .material-icons-round { font-size: 18px; color: var(--primary); }
+
+.garden-empty {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 32px 20px 24px; text-align: center; gap: 10px;
+}
+.garden-empty-illustration {
+  width: 130px; height: 130px;
+  background: radial-gradient(circle, rgba(16,185,129,.12) 0%, transparent 70%);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 72px; margin-bottom: 6px;
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+.garden-empty-title { font-size: 1rem; font-weight: 700; color: var(--text1); }
+.garden-empty-sub   { font-size: .82rem; color: var(--text2); line-height: 1.5; max-width: 220px; }
+
+.garden-plant-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--card);
+  border-radius: var(--radius); border: 1px solid var(--border);
+  box-shadow: var(--shadow); margin-bottom: 10px;
+  cursor: pointer; transition: var(--transition);
+}
+.garden-plant-card:hover { transform: translateX(3px); border-color: var(--primary); }
+.garden-plant-thumb {
+  width: 52px; height: 52px; border-radius: var(--radius-sm);
+  background: rgba(16,185,129,.1); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; overflow: hidden;
+}
+.garden-plant-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.garden-plant-info { flex: 1; min-width: 0; }
+.garden-plant-name { font-size: .95rem; font-weight: 700; color: var(--text1); }
+.garden-plant-added { font-size: .74rem; color: var(--text2); margin-top: 2px; }
+.garden-plant-health {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: .72rem; font-weight: 700; color: var(--success);
+  margin-top: 4px;
+}
+.garden-plant-health .material-icons-round { font-size: 13px; }
+
+/* Add plant bottom sheet */
+.add-plant-sheet {
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.add-plant-sheet.open { display: flex; animation: fadeIn .2s ease; }
+.add-plant-inner {
+  width: 100%; max-width: 480px;
+  background: var(--card); border-radius: 24px 24px 0 0;
+  padding: 0 20px 36px;
+  animation: slideUp .32s cubic-bezier(.34,1.2,.64,1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,.18);
+}
+.add-plant-handle {
+  width: 36px; height: 4px; background: var(--border);
+  border-radius: 2px; margin: 12px auto 0;
+}
+.add-plant-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0 16px;
+  border-bottom: 1px solid var(--border); margin-bottom: 18px;
+}
+.add-plant-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem; color: var(--text1);
+}
+.add-plant-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.add-plant-opt {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; padding: 24px 12px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: var(--radius); color: #fff; cursor: pointer;
+  font-size: .88rem; font-weight: 700; border: none;
+  box-shadow: 0 4px 16px rgba(16,185,129,.3);
+  transition: var(--transition);
+}
+.add-plant-opt:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(16,185,129,.4); }
+.add-plant-opt .material-icons-round { font-size: 32px; }
+.add-plant-opt.secondary {
+  background: rgba(16,185,129,.1);
+  color: var(--primary); box-shadow: none;
+  border: 2px solid rgba(16,185,129,.3);
+}
+
+/* Name input modal */
+.name-input-wrap {
+  display: flex; gap: 8px; margin-top: 16px;
+}
+.name-input-field {
+  flex: 1; padding: 12px 14px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: .95rem; color: var(--text1); background: var(--bg);
+  transition: border var(--transition);
+}
+.name-input-field:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(16,185,129,.1); }
+.name-input-field::placeholder { color: var(--text2); }
+.name-add-btn {
+  padding: 12px 18px; border-radius: var(--radius-sm);
+  background: var(--primary); color: #fff;
+  font-weight: 700; font-size: .88rem;
+  transition: var(--transition);
+}
+.name-add-btn:hover { background: var(--accent); }
+
+/* ════════════════════════════════
+   SETTINGS SCREEN
+════════════════════════════════ */
+.settings-premium-banner {
+  background: linear-gradient(135deg, #1a3a2a 0%, #0f2318 100%);
+  border-radius: var(--radius); padding: 24px 20px;
+  text-align: center; margin: 14px 0 6px;
+  border: 1px solid rgba(16,185,129,.25);
+  position: relative; overflow: hidden;
+}
+.settings-premium-banner::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 70% 30%, rgba(16,185,129,.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.premium-leaf-icon { font-size: 48px; display: block; margin-bottom: 8px; filter: drop-shadow(0 4px 12px rgba(16,185,129,.4)); }
+.premium-banner-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.2rem; color: var(--primary); margin-bottom: 6px;
+}
+.premium-banner-sub { font-size: .82rem; color: #9CA3AF; line-height: 1.55; margin-bottom: 16px; }
+.premium-banner-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 32px; border-radius: 50px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff; font-size: .9rem; font-weight: 700;
+  box-shadow: 0 4px 18px rgba(16,185,129,.4);
+  transition: var(--transition); cursor: pointer; border: none;
+  font-family: inherit;
+}
+.premium-banner-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(16,185,129,.5); }
+.premium-banner-btn .crown { font-size: 18px; }
+
+.settings-group { margin: 14px 0; }
+.settings-group-label {
+  font-size: .72rem; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .7px;
+  padding: 0 4px; margin-bottom: 6px;
+}
+.settings-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; background: var(--card);
+  border: 1px solid var(--border); cursor: pointer;
+  transition: var(--transition); position: relative;
+}
+.settings-item:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+.settings-item:last-child  { border-radius: 0 0 var(--radius) var(--radius); border-top: none; }
+.settings-item:only-child  { border-radius: var(--radius); }
+.settings-item:not(:first-child) { border-top: none; }
+.settings-item:hover { background: rgba(16,185,129,.04); }
+
+.settings-item-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.settings-item-icon.green  { background: #10B981; color: #fff; }
+.settings-item-icon.purple { background: #8B5CF6; color: #fff; }
+.settings-item-icon.blue   { background: #3B82F6; color: #fff; }
+.settings-item-icon.orange { background: #F97316; color: #fff; }
+.settings-item-icon.teal   { background: #06B6D4; color: #fff; }
+.settings-item-icon.lime   { background: #84CC16; color: #fff; }
+
+.settings-item-label { flex: 1; font-size: .92rem; font-weight: 600; color: var(--text1); }
+.settings-item-chevron { color: var(--text2); }
+.settings-item-chevron .material-icons-round { font-size: 18px; }
+[dir="rtl"] .settings-item-chevron .material-icons-round { transform: scaleX(-1); }
+
+.settings-version {
+  text-align: center; font-size: .75rem; color: var(--text2);
+  padding: 20px 0 8px;
+}
+
+/* ════════════════════════════════
+   API KEY INPUT
+════════════════════════════════ */
+.apikey-box {
+  background: var(--card); border-radius: var(--radius);
+  border: 1.5px solid var(--border); padding: 16px;
+  margin: 6px 0;
+}
+.apikey-label {
+  font-size: .78rem; font-weight: 700; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .6px;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.apikey-label .material-icons-round { font-size: 14px; color: var(--primary); }
+.apikey-row { display: flex; gap: 8px; align-items: center; }
+.apikey-input {
+  flex: 1; padding: 11px 14px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: .85rem; color: var(--text1); background: var(--bg);
+  font-family: monospace; letter-spacing: .5px;
+  transition: border var(--transition);
+}
+.apikey-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(16,185,129,.1); }
+.apikey-input::placeholder { font-family: 'DM Sans', sans-serif; letter-spacing: 0; color: var(--text2); font-size: .82rem; }
+.apikey-save-btn {
+  padding: 11px 16px; border-radius: var(--radius-sm);
+  background: var(--primary); color: #fff;
+  font-weight: 700; font-size: .82rem; white-space: nowrap;
+  transition: var(--transition);
+}
+.apikey-save-btn:hover { background: var(--accent); }
+.apikey-status {
+  font-size: .76rem; margin-top: 8px; display: flex;
+  align-items: center; gap: 5px; font-weight: 600;
+}
+.apikey-status.ok    { color: var(--success); }
+.apikey-status.empty { color: var(--text2); }
+.apikey-status .material-icons-round { font-size: 14px; }
+
+/* First-run API key banner (shown on diagnose screen if no key) */
+.no-apikey-banner {
+  background: linear-gradient(135deg, rgba(245,158,11,.12), rgba(239,68,68,.08));
+  border: 1.5px solid rgba(245,158,11,.35); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 16px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.no-apikey-banner .material-icons-round { color: #F59E0B; font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+.no-apikey-banner-text { flex: 1; }
+.no-apikey-banner-title { font-size: .88rem; font-weight: 700; color: var(--text1); margin-bottom: 4px; }
+.no-apikey-banner-sub   { font-size: .78rem; color: var(--text2); line-height: 1.5; }
+.no-apikey-banner-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 10px; padding: 7px 14px;
+  background: #F59E0B; color: #fff; border-radius: 8px;
+  font-size: .78rem; font-weight: 700; border: none; cursor: pointer;
+  transition: var(--transition); font-family: inherit;
+}
+.no-apikey-banner-btn:hover { background: #D97706; }
+
+@keyframes pulse-warn {
+  0%,100% { transform: scale(1); box-shadow: none; }
+  50% { transform: scale(1.01); box-shadow: 0 0 0 4px rgba(245,158,11,.25); }
+}
+
+/* ════════════════════════════════
+   PREMIUM MODAL
+════════════════════════════════ */
+.premium-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(6px);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+}
+.premium-overlay.open { display: flex; animation: fadeIn .25s ease; }
+
+.premium-modal {
+  width: 100%; max-width: 480px;
+  background: #111827; border-radius: 24px 24px 0 0;
+  padding: 0 0 32px;
+  animation: slideUp .35s cubic-bezier(.34,1.2,.64,1);
+  box-shadow: 0 -12px 50px rgba(0,0,0,.4);
+  max-height: 95vh; overflow-y: auto;
+}
+.premium-modal::-webkit-scrollbar { display: none; }
+
+.premium-close-row {
+  display: flex; justify-content: flex-end; padding: 14px 18px 0;
+}
+.premium-close-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,.1); color: #9CA3AF;
+  display: flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer; transition: background var(--transition);
+}
+.premium-close-btn:hover { background: rgba(255,255,255,.18); }
+.premium-close-btn .material-icons-round { font-size: 17px; }
+
+.premium-features-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 20px 10px; padding: 10px 20px 20px;
+  text-align: center;
+}
+.pf-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pf-icon { font-size: 28px; color: #10B981; }
+.pf-label { font-size: .68rem; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: .4px; line-height: 1.3; }
+
+.premium-heading { text-align: center; padding: 0 20px 4px; }
+.premium-heading h2 { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: #F9FAFB; margin-bottom: 4px; }
+.premium-heading p  { font-size: .88rem; color: #F59E0B; font-weight: 700; }
+
+.premium-divider { height: 1px; background: rgba(255,255,255,.08); margin: 16px 0; }
+
+.free-trial-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px 14px;
+}
+.free-trial-label { font-size: .88rem; color: #D1D5DB; }
+.toggle-pill {
+  width: 46px; height: 26px; border-radius: 13px;
+  background: rgba(255,255,255,.15); position: relative;
+  cursor: pointer; transition: background .3s; border: none; flex-shrink: 0;
+}
+.toggle-pill.on { background: var(--primary); }
+.toggle-pill::after {
+  content: ''; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; position: absolute; top: 3px; left: 3px;
+  transition: left .3s; box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+.toggle-pill.on::after { left: 23px; }
+
+.plan-options { display: flex; flex-direction: column; gap: 10px; padding: 0 20px; }
+.plan-card {
+  border: 2px solid rgba(255,255,255,.12); border-radius: var(--radius);
+  padding: 16px; cursor: pointer; position: relative;
+  transition: border var(--transition); background: rgba(255,255,255,.03);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.plan-card.selected { border-color: var(--primary); background: rgba(16,185,129,.08); }
+.plan-card-left { display: flex; align-items: center; gap: 12px; }
+.plan-radio {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.3); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.plan-card.selected .plan-radio { border-color: var(--primary); background: var(--primary); }
+.plan-card.selected .plan-radio::after {
+  content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff;
+}
+.plan-name  { font-size: .88rem; font-weight: 800; color: #F9FAFB; letter-spacing: .3px; }
+.plan-price-sub { font-size: .74rem; color: #9CA3AF; margin-top: 2px; }
+.plan-price-right { text-align: right; }
+.plan-price-main { font-size: .95rem; font-weight: 800; color: #F9FAFB; }
+.plan-price-per  { font-size: .72rem; color: #9CA3AF; }
+.plan-badge {
+  position: absolute; top: -10px; right: 12px;
+  background: #EF4444; color: #fff;
+  font-size: .7rem; font-weight: 800; padding: 3px 10px;
+  border-radius: 20px; letter-spacing: .3px;
+}
+
+.premium-continue-btn {
+  width: calc(100% - 40px); margin: 18px 20px 0;
+  padding: 16px; border-radius: 50px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff; font-size: 1rem; font-weight: 700;
+  box-shadow: 0 4px 18px rgba(16,185,129,.4);
+  transition: var(--transition); cursor: pointer; border: none;
+  font-family: inherit;
+}
+.premium-continue-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(16,185,129,.5); }
+
+.premium-links {
+  display: flex; justify-content: center; gap: 24px;
+  padding-top: 14px;
+}
+.premium-links a { font-size: .75rem; color: #6B7280; text-decoration: none; transition: color var(--transition); }
+.premium-links a:hover { color: var(--primary); }
+
+/* ════════════════════════════════
+   PLANT INFO FULL-SCREEN MODAL
+════════════════════════════════ */
+.plant-info-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: #111827;
+  display: none; flex-direction: column;
+  overflow: hidden;
+}
+.plant-info-overlay.open { display: flex; animation: fadeIn .25s ease; }
+
+.plant-info-analyzing {
+  position: absolute; inset: 0; z-index: 10;
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(17,24,39,.92); backdrop-filter: blur(8px);
+}
+.plant-info-analyzing.show { display: flex; }
+
+.plant-info-content {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* Hero */
+.plant-hero {
+  position: relative; flex-shrink: 0;
+  height: 260px; overflow: hidden; background: #1F2937;
+}
+.plant-hero img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.plant-hero-dots {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px;
+}
+.plant-hero-dots span {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255,255,255,.4);
+}
+.plant-hero-dots span.active { background: #fff; width: 20px; border-radius: 4px; }
+.plant-close-btn {
+  position: absolute; top: 14px; left: 14px;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(0,0,0,.45); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer; color: #fff; transition: background var(--transition);
+}
+.plant-close-btn:hover { background: rgba(0,0,0,.65); }
+.plant-close-btn .material-icons-round { font-size: 18px; }
+
+/* Body */
+.plant-info-body {
+  flex: 1; overflow-y: auto; padding: 20px 16px 0;
+  background: #111827; color: #F9FAFB;
+}
+.plant-info-body::-webkit-scrollbar { width: 3px; }
+.plant-info-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
+
+.plant-name-row { margin-bottom: 16px; }
+.plant-sci-name  { font-family: 'DM Serif Display', serif; font-size: 1.5rem; color: #F9FAFB; line-height: 1.2; margin-bottom: 2px; }
+.plant-also-known { font-size: .85rem; color: #9CA3AF; margin-bottom: 2px; }
+.plant-botanical  { font-size: .82rem; color: #6B7280; }
+
+.plant-section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.1rem; color: #F9FAFB; margin: 20px 0 10px;
+}
+
+.plant-desc-box {
+  background: #1F2937; border-radius: var(--radius-sm);
+  padding: 14px; font-size: .85rem; color: #D1D5DB; line-height: 1.65;
+  margin-bottom: 10px; position: relative;
+}
+.plant-desc-collapsed { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.plant-show-more {
+  color: #10B981; font-size: .82rem; font-weight: 700;
+  background: none; border: none; cursor: pointer; padding: 4px 0 0; display: block;
+}
+
+.plant-edible-row {
+  display: flex; align-items: center; gap: 8px;
+  background: #1F2937; border-radius: var(--radius-sm);
+  padding: 12px 14px; margin-bottom: 4px;
+  font-size: .85rem; color: #10B981; font-weight: 600;
+}
+.plant-edible-row .material-icons-round { font-size: 18px; }
+
+.plant-info-card {
+  background: #1F2937; border-radius: var(--radius-sm);
+  overflow: hidden; margin-bottom: 10px;
+}
+.plant-info-card-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px; font-size: .88rem; font-weight: 700; color: #F9FAFB;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.plant-info-card-header .material-icons-round { font-size: 18px; color: #10B981; }
+.plant-info-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.04);
+  gap: 12px;
+}
+.plant-info-row:last-child { border-bottom: none; }
+.plant-info-key { font-size: .82rem; color: #9CA3AF; flex-shrink: 0; min-width: 100px; }
+.plant-info-val { font-size: .82rem; color: #F9FAFB; font-weight: 700; text-align: right; flex: 1; }
+
+/* Growth ring */
+.growth-ring-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.growth-ring-wrap { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+.growth-ring-svg { width: 72px; height: 72px; transform: rotate(-90deg); }
+.growth-ring-bg  { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 7; }
+.growth-ring-fill{ fill: none; stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.growth-ring-label {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 0;
+}
+.growth-ring-num  { font-size: 1rem; font-weight: 800; color: #F59E0B; }
+.growth-ring-sub  { font-size: .58rem; color: #9CA3AF; font-weight: 600; }
+.growth-rate-info { flex: 1; }
+.growth-rate-title { font-size: .95rem; font-weight: 700; color: #F59E0B; margin-bottom: 6px; }
+.growth-rate-legend { display: flex; gap: 10px; }
+.growth-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.growth-legend-item { display: flex; align-items: flex-start; gap: 5px; font-size: .72rem; color: #9CA3AF; }
+
+/* Appearance tabs */
+.appear-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,.08); margin: 0 -14px; }
+.appear-tab {
+  flex: 1; padding: 10px 0; text-align: center;
+  font-size: .8rem; font-weight: 700; color: #6B7280;
+  background: none; border: none; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: color var(--transition);
+}
+.appear-tab.active { color: #10B981; border-bottom-color: #10B981; }
+
+.color-dots { display: flex; gap: 6px; justify-content: flex-end; }
+.color-dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,.15); }
+
+.plant-photos-row {
+  display: flex; gap: 8px; overflow-x: auto; padding: 10px 0;
+  scrollbar-width: none;
+}
+.plant-photos-row::-webkit-scrollbar { display: none; }
+.plant-photo-thumb {
+  width: 100px; height: 80px; border-radius: var(--radius-sm);
+  object-fit: cover; flex-shrink: 0; background: #374151;
+}
+
+/* Ask AI Botanist */
+.ask-botanist-card {
+  background: #1F2937; border-radius: var(--radius-sm);
+  padding: 14px; display: flex; align-items: center; gap: 12px;
+  margin-bottom: 10px; cursor: pointer; transition: background var(--transition);
+}
+.ask-botanist-card:hover { background: #2D3748; }
+.botanist-avatar {
+  width: 52px; height: 52px; border-radius: var(--radius-sm);
+  background: #374151; display: flex; align-items: center; justify-content: center;
+  font-size: 28px; flex-shrink: 0;
+}
+.botanist-info { flex: 1; }
+.botanist-title  { font-size: .9rem; font-weight: 700; color: #F9FAFB; margin-bottom: 3px; }
+.botanist-sub    { font-size: .76rem; color: #9CA3AF; }
+.botanist-btn {
+  padding: 8px 16px; border-radius: 20px;
+  background: #10B981; color: #fff; font-size: .8rem; font-weight: 700;
+  border: none; cursor: pointer; white-space: nowrap;
+  transition: background var(--transition); font-family: inherit;
+}
+.botanist-btn:hover { background: #059669; }
+
+/* Feedback */
+.plant-feedback-card {
+  background: #1F2937; border-radius: var(--radius-sm);
+  padding: 14px; margin-bottom: 10px;
+}
+.plant-feedback-q { font-size: .85rem; color: #D1D5DB; margin-bottom: 12px; font-weight: 600; }
+.plant-feedback-btns { display: flex; gap: 10px; }
+.plant-feedback-btn {
+  flex: 1; padding: 12px; border-radius: var(--radius-sm);
+  background: #374151; color: #9CA3AF; font-size: 1.2rem;
+  border: none; cursor: pointer; transition: background var(--transition);
+}
+.plant-feedback-btn:hover { background: #4B5563; }
+.plant-feedback-btn.liked   { background: rgba(16,185,129,.2); color: #10B981; }
+.plant-feedback-btn.disliked{ background: rgba(239,68,68,.15); color: #EF4444; }
+
+/* Similar images */
+.similar-images-row {
+  display: flex; gap: 8px; overflow-x: auto;
+  padding: 10px 0 4px; scrollbar-width: none;
+}
+.similar-images-row::-webkit-scrollbar { display: none; }
+.similar-img {
+  width: 120px; height: 110px; border-radius: var(--radius-sm);
+  object-fit: cover; flex-shrink: 0; background: #374151;
+}
+
+/* Footer sticky */
+.plant-info-footer {
+  padding: 12px 16px; background: #111827;
+  border-top: 1px solid rgba(255,255,255,.07);
+  flex-shrink: 0;
+}
+.plant-add-garden-btn {
+  width: 100%; padding: 16px; border-radius: 50px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: #fff; font-size: 1rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 4px 18px rgba(16,185,129,.4);
+  transition: var(--transition); cursor: pointer; border: none;
+  font-family: inherit;
+}
+.plant-add-garden-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(16,185,129,.5); }
+
+/* Taxonomy separator */
+.taxonomy-separator { height: 1px; background: rgba(255,255,255,.08); margin: 6px 14px; }
+.plant-sci-name-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px;
+}
+.plant-sci-name-key { font-size: .82rem; color: #9CA3AF; }
+.plant-sci-name-val { font-size: .88rem; color: #F9FAFB; font-weight: 800; font-style: italic; }
+
+/* bottom spacer in scroll */
+.plant-body-spacer { height: 20px; }
+
+/* ════════════════════════════════
+   DIAGNOSIS RESULT MODAL — redesign
+════════════════════════════════ */
+.diag-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: #0D1B12;
+  display: none; flex-direction: column;
+  overflow: hidden;
+}
+.diag-overlay.open { display: flex; animation: fadeIn .28s ease; }
+
+/* Hero */
+.diag-hero {
+  position: relative; flex-shrink: 0; height: 230px;
+  overflow: hidden; background: #1a2e1e;
+}
+.diag-hero-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #0f2318 0%, #1a3a25 100%);
+  filter: blur(0);
+}
+.diag-hero-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: .55;
+  display: block;
+}
+.diag-hero-gradient {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(13,27,18,0) 40%, #0D1B12 100%);
+}
+.diag-hero-info {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 16px 20px 20px;
+}
+.diag-disease-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem; color: #F9FAFB; line-height: 1.2;
+  margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+.diag-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.diag-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 50px;
+  font-size: .74rem; font-weight: 700; letter-spacing: .2px;
+}
+.diag-badge-conf-high { background: rgba(16,185,129,.25); color: #34D399; border: 1px solid rgba(16,185,129,.35); }
+.diag-badge-conf-med  { background: rgba(245,158,11,.2);  color: #FBBF24; border: 1px solid rgba(245,158,11,.35); }
+.diag-badge-conf-low  { background: rgba(239,68,68,.2);   color: #F87171; border: 1px solid rgba(239,68,68,.3); }
+.diag-badge .material-icons-round { font-size: 13px; }
+
+/* Body */
+.diag-body {
+  flex: 1; overflow-y: auto;
+  padding: 0 16px 0; background: #0D1B12; color: #F9FAFB;
+}
+.diag-body::-webkit-scrollbar { width: 3px; }
+.diag-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); }
+
+/* Confidence bar */
+.diag-conf-bar-wrap { padding: 16px 0 4px; }
+.diag-conf-bar-top {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: .78rem; color: #9CA3AF; margin-bottom: 7px;
+}
+.diag-conf-bar-top span:last-child { font-weight: 800; color: #F9FAFB; font-size: .85rem; }
+.diag-conf-bar {
+  height: 8px; background: rgba(255,255,255,.08);
+  border-radius: 4px; overflow: hidden;
+}
+.diag-conf-bar-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, #10B981, #34D399);
+  transition: width .9s cubic-bezier(.4,0,.2,1);
+}
+.diag-conf-bar-fill.med  { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+.diag-conf-bar-fill.low  { background: linear-gradient(90deg, #EF4444, #F87171); }
+
+/* Sections */
+.diag-sep { height: 1px; background: rgba(255,255,255,.07); margin: 14px 0; }
+.diag-section { margin-bottom: 18px; }
+.diag-section-header {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .8rem; font-weight: 800; color: #9CA3AF;
+  text-transform: uppercase; letter-spacing: .7px;
+  margin-bottom: 10px;
+}
+.diag-section-header .material-icons-round { font-size: 16px; color: #10B981; }
+
+.diag-list { display: flex; flex-direction: column; gap: 7px; }
+.diag-list-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: rgba(255,255,255,.04); border-radius: 10px;
+  padding: 10px 12px;
+}
+.diag-list-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #10B981; flex-shrink: 0; margin-top: 6px;
+}
+.diag-list-text { font-size: .85rem; color: #D1D5DB; line-height: 1.55; }
+
+.diag-text-box {
+  background: rgba(255,255,255,.04); border-radius: 10px;
+  padding: 12px 14px; font-size: .85rem;
+  color: #D1D5DB; line-height: 1.65;
+}
+.diag-text-box.treatment { border-left: 3px solid #10B981; }
+.diag-text-box.prevention { border-left: 3px solid #3B82F6; }
+[dir="rtl"] .diag-text-box.treatment  { border-left: none; border-right: 3px solid #10B981; }
+[dir="rtl"] .diag-text-box.prevention { border-left: none; border-right: 3px solid #3B82F6; }
+
+/* Footer */
+.diag-footer {
+  padding: 12px 16px;
+  background: #0D1B12;
+  border-top: 1px solid rgba(255,255,255,.07);
+  flex-shrink: 0;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════
+     APP SHELL
+═══════════════════════════ -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="app-logo">
+      <div class="logo-dot"><span class="material-icons-round">eco</span></div>
+      <span class="logo-text">Plant Doctor</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="lang-toggle" onclick="openLangPanel()" id="lang-toggle-btn" title="Change language">EN</button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <span class="material-icons-round" id="theme-icon">dark_mode</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN: DIAGNOSE ══ -->
+  <div class="screen active" id="screen-diagnose">
+
+    <div class="screen-header">
+      <h1 class="screen-title" data-i18n="diagnose_title">Plant Disease<br>Diagnosis</h1>
+      <p class="screen-subtitle" data-i18n="diagnose_subtitle">Upload a photo or describe your plant's symptoms</p>
+    </div>
+
+    <!-- No API Key warning banner -->
+    <div class="no-apikey-banner" id="no-apikey-banner" style="display:none;">
+      <span class="material-icons-round">warning</span>
+      <div class="no-apikey-banner-text">
+        <div class="no-apikey-banner-title" data-i18n="no_key_title">API Key required</div>
+        <p class="no-apikey-banner-sub" data-i18n="no_key_sub">Add your Anthropic API key in Settings to enable real AI diagnosis.</p>
+        <button class="no-apikey-banner-btn" onclick="switchTab('settings')">
+          <span class="material-icons-round" style="font-size:14px;">settings</span>
+          <span data-i18n="go_settings">Go to Settings</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Photo section -->
+    <div class="photo-section" id="photo-section">
+      <div class="photo-placeholder" id="photo-placeholder">
+        <span class="material-icons-round photo-placeholder-icon">local_florist</span>
+        <p class="placeholder-label" data-i18n="photo_label">Take a photo of your plant</p>
+        <div class="photo-buttons">
+          <button class="photo-btn camera" onclick="triggerCamera()">
+            <span class="material-icons-round">camera_alt</span> <span data-i18n="camera_btn">Camera</span>
+          </button>
+          <button class="photo-btn gallery" onclick="triggerGallery()">
+            <span class="material-icons-round">photo_library</span> <span data-i18n="gallery_btn">Gallery</span>
+          </button>
+        </div>
+      </div>
+      <div class="photo-container" id="photo-container" style="display:none;">
+        <img id="captured-photo" class="captured-photo" src="" alt="Plant photo">
+        <button class="retake-btn" onclick="retakePhoto()">
+          <span class="material-icons-round" style="font-size:16px;">camera_alt</span> <span data-i18n="retake_btn">Retake</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- File inputs (hidden) -->
+    <input type="file" accept="image/*" capture="environment" id="camera-input" class="file-input" onchange="handleFileInput(this)">
+    <input type="file" accept="image/*" id="gallery-input" class="file-input" onchange="handleFileInput(this)">
+
+    <!-- Analyzing state -->
+    <div class="analyzing-container" id="analyzing-container">
+      <div class="spinner"></div>
+      <span class="analyzing-text" data-i18n="analyzing_text">Analyzing your plant<span class="analyzing-dots"></span></span>
+    </div>
+
+    <!-- Search section -->
+    <div class="search-section">
+      <p class="section-label">
+        <span class="material-icons-round" style="font-size:14px;">search</span>
+        <span data-i18n="or_describe">Or describe symptoms</span>
+      </p>
+      <div class="search-input-wrap">
+        <span class="material-icons-round">search</span>
+        <input
+          class="search-input"
+          id="symptom-input"
+          data-i18n-placeholder="search_placeholder"
+          placeholder="e.g. brown spots, yellowing leaves…"
+          oninput="searchBySymptoms(this.value)"
+          autocomplete="off"
+        >
+      </div>
+      <div class="search-results" id="search-results"></div>
+    </div>
+
+  </div><!-- /screen-diagnose -->
+
+  <!-- ══ SCREEN: HISTORY ══ -->
+  <div class="screen" id="screen-history">
+    <div class="screen-header">
+      <h1 class="screen-title" data-i18n="history_title">Diagnosis<br>History</h1>
+      <p class="screen-subtitle" data-i18n="history_subtitle">Your past plant diagnoses</p>
+    </div>
+    <div id="history-list-wrap"></div>
+  </div>
+
+  <!-- ══ SCREEN: GARDEN ══ -->
+  <div class="screen" id="screen-garden">
+    <div class="screen-header">
+      <h1 class="screen-title" data-i18n="garden_title">My<br>Garden</h1>
+      <p class="screen-subtitle" data-i18n="garden_subtitle">Track and care for your plants</p>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="garden-actions">
+      <button class="garden-action-btn" onclick="openIdentifyPlant()">
+        <span class="material-icons-round">search</span>
+        <span data-i18n="identify_plant">Identify Plant</span>
+      </button>
+      <button class="garden-action-btn" onclick="switchTab('diagnose')">
+        <span class="material-icons-round">coronavirus</span>
+        <span data-i18n="plant_diagnosis">Plant Diagnosis</span>
+      </button>
+      <button class="garden-action-btn secondary" onclick="switchTab('diagnose')">
+        <span class="material-icons-round">favorite</span>
+        <span data-i18n="health_check">Health Check</span>
+      </button>
+    </div>
+
+    <!-- My Plants section -->
+    <div>
+      <div class="garden-section-title">
+        <span class="material-icons-round">yard</span>
+        <span data-i18n="my_plants">My Plants</span>
+      </div>
+      <div id="garden-plants-wrap"></div>
+    </div>
+
+    <!-- Add plant button -->
+    <button class="btn-primary" style="margin-top:16px;" onclick="openAddPlant()">
+      <span class="material-icons-round">add</span>
+      <span data-i18n="add_plant_btn">Add a Plant</span>
+    </button>
+  </div>
+
+  <!-- ══ SCREEN: SETTINGS ══ -->
+  <div class="screen" id="screen-settings">
+    <div class="screen-header">
+      <h1 class="screen-title" data-i18n="settings_title">Settings</h1>
+    </div>
+
+    <!-- Premium Banner -->
+    <div class="settings-premium-banner">
+      <span class="premium-leaf-icon">🌿</span>
+      <div class="premium-banner-title" data-i18n="get_premium">Get Premium</div>
+      <p class="premium-banner-sub" data-i18n="premium_sub">Get access to premium features and use app without any restriction &amp; distractions.</p>
+      <button class="premium-banner-btn" onclick="openPremium()">
+        <span class="crown">👑</span> <span data-i18n="premium_btn">Premium</span>
+      </button>
+    </div>
+
+    <!-- Group 1 -->
+    <div class="settings-group">
+      <div class="settings-group-label" data-i18n="settings_general">General</div>
+      <div class="settings-item" onclick="openLangPanel()">
+        <div class="settings-item-icon green"><span class="material-icons-round">language</span></div>
+        <span class="settings-item-label" data-i18n="pref_language">Preferred Language</span>
+        <div class="settings-item-chevron"><span class="material-icons-round">chevron_right</span></div>
+      </div>
+    </div>
+
+    <!-- API Key -->
+    <div class="settings-group">
+      <div class="settings-group-label" data-i18n="settings_ai">AI Configuration</div>
+      <div class="apikey-box">
+        <div class="apikey-label">
+          <span class="material-icons-round">vpn_key</span>
+          <span data-i18n="apikey_label">Anthropic API Key</span>
+        </div>
+        <div class="apikey-row">
+          <input
+            class="apikey-input"
+            id="apikey-input"
+            type="password"
+            data-i18n-placeholder="apikey_placeholder"
+            placeholder="sk-ant-api03-…"
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button class="apikey-save-btn" onclick="saveApiKey()" data-i18n="apikey_save">Save</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="apikey-save-btn" style="flex:1;background:rgba(16,185,129,.15);color:var(--primary);font-size:.78rem;" onclick="testApiKey()" id="apikey-test-btn" data-i18n="apikey_test">Test Key</button>
+          <button class="apikey-save-btn" style="background:#EF4444;font-size:.78rem;" onclick="clearApiKey()" data-i18n="apikey_clear">Clear</button>
+        </div>
+        <div class="apikey-status empty" id="apikey-status">
+          <span class="material-icons-round">info</span>
+          <span id="apikey-status-text" data-i18n="apikey_not_set">No key saved — AI diagnosis disabled</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group 2 -->
+    <div class="settings-group">
+      <div class="settings-group-label" data-i18n="settings_support">Support</div>
+      <div class="settings-item" onclick="showInfoModal('faq')">
+        <div class="settings-item-icon purple"><span class="material-icons-round">help_outline</span></div>
+        <span class="settings-item-label" data-i18n="faq">FAQ</span>
+        <div class="settings-item-chevron"><span class="material-icons-round">chevron_right</span></div>
+      </div>
+      <div class="settings-item" onclick="showInfoModal('privacy')">
+        <div class="settings-item-icon blue"><span class="material-icons-round">privacy_tip</span></div>
+        <span class="settings-item-label" data-i18n="privacy_policy">Privacy Policy</span>
+        <div class="settings-item-chevron"><span class="material-icons-round">chevron_right</span></div>
+      </div>
+      <div class="settings-item" onclick="showInfoModal('terms')">
+        <div class="settings-item-icon orange"><span class="material-icons-round">gavel</span></div>
+        <span class="settings-item-label" data-i18n="terms_use">Terms of Use</span>
+        <div class="settings-item-chevron"><span class="material-icons-round">chevron_right</span></div>
+      </div>
+    </div>
+
+    <!-- Group 3 -->
+    <div class="settings-group">
+      <div class="settings-group-label" data-i18n="settings_other">Other</div>
+      <div class="settings-item" onclick="shareApp()">
+        <div class="settings-item-icon teal"><span class="material-icons-round">share</span></div>
+        <span class="settings-item-label" data-i18n="share_app">Share this app</span>
+        <div class="settings-item-chevron"><span class="material-icons-round">chevron_right</span></div>
+      </div>
+      <div class="settings-item" onclick="rateApp()">
+        <div class="settings-item-icon lime"><span class="material-icons-round">star_rate</span></div>
+        <span class="settings-item-label" data-i18n="rate_app">Rate this app</span>
+        <div class="settings-item-chevron"><span class="material-icons-round">chevron_right</span></div>
+      </div>
+    </div>
+
+    <div class="settings-version">Smart Plant Doctor v1.0 · Made with 🌿</div>
+  </div>
+
+  <!-- TAB BAR -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" id="tab-diagnose" onclick="switchTab('diagnose')">
+      <span class="material-icons-round">biotech</span>
+      <span class="tab-label" data-i18n="tab_diagnose">Diagnose</span>
+    </button>
+    <button class="tab-btn" id="tab-garden" onclick="switchTab('garden')">
+      <span class="material-icons-round">yard</span>
+      <span class="tab-label" data-i18n="tab_garden">Garden</span>
+    </button>
+    <button class="tab-btn" id="tab-history" onclick="switchTab('history')">
+      <span class="material-icons-round">history</span>
+      <span class="tab-label" data-i18n="tab_history">History</span>
+    </button>
+    <button class="tab-btn" id="tab-settings" onclick="switchTab('settings')">
+      <span class="material-icons-round">settings</span>
+      <span class="tab-label" data-i18n="tab_settings">Settings</span>
+    </button>
+  </nav>
+
+</div><!-- /app -->
+
+<!-- ═══════════════════════════
+     DIAGNOSIS RESULT MODAL (redesigned)
+═══════════════════════════ -->
+<div class="diag-overlay" id="result-modal">
+
+  <!-- Hero photo -->
+  <div class="diag-hero" id="diag-hero">
+    <div class="diag-hero-bg" id="diag-hero-bg"></div>
+    <img class="diag-hero-img" id="diag-hero-img" src="" alt="">
+    <div class="diag-hero-gradient"></div>
+    <button class="plant-close-btn" onclick="closeModal('result-modal')">
+      <span class="material-icons-round">close</span>
+    </button>
+    <div class="diag-hero-info" id="diag-hero-info"></div>
+  </div>
+
+  <!-- Scrollable body -->
+  <div class="diag-body" id="result-modal-body"></div>
+
+  <!-- Sticky footer -->
+  <div class="diag-footer">
+    <button class="plant-add-garden-btn" onclick="saveDiagnosis()">
+      <span class="material-icons-round">save</span>
+      <span data-i18n="save_btn">Save to History</span>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════
+     HISTORY DETAIL MODAL
+═══════════════════════════ -->
+<div class="modal-overlay" id="detail-modal" onclick="closeModalOutside(event,'detail-modal')">
+  <div class="modal" id="detail-modal-inner">
+    <div class="modal-header">
+      <span class="modal-title" data-i18n="detail_modal_title">Diagnosis Details</span>
+      <button class="modal-close" onclick="closeModal('detail-modal')">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <div class="modal-body" id="detail-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn-danger" onclick="deleteDiagnosis()" id="delete-btn">
+        <span class="material-icons-round">delete</span> <span data-i18n="delete_btn">Delete</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- IDENTIFY PLANT PICKER SHEET -->
+<div class="add-plant-sheet" id="identify-picker-sheet" onclick="closeIdentifyPickerOutside(event)">
+  <div class="add-plant-inner">
+    <div class="add-plant-handle"></div>
+    <div class="add-plant-header">
+      <span class="add-plant-title" data-i18n="identify_plant">Identify Plant</span>
+      <button class="lang-close" onclick="closeIdentifyPicker()">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <div class="add-plant-options">
+      <button class="add-plant-opt" onclick="triggerIdentifyCamera()">
+        <span class="material-icons-round">camera_alt</span>
+        <span data-i18n="take_snap">Take a snap</span>
+      </button>
+      <button class="add-plant-opt secondary" onclick="triggerIdentifyGallery()">
+        <span class="material-icons-round">photo_library</span>
+        <span data-i18n="gallery_btn">Gallery</span>
+      </button>
+    </div>
+    <input type="file" accept="image/*" capture="environment" id="identify-camera-input" class="file-input" onchange="handleIdentifyPhoto(this)">
+    <input type="file" accept="image/*" id="identify-gallery-input" class="file-input" onchange="handleIdentifyPhoto(this)">
+  </div>
+</div>
+
+<!-- PLANT INFO FULL-SCREEN MODAL -->
+<div class="plant-info-overlay" id="plant-info-modal">
+
+  <!-- Analyzing overlay -->
+  <div class="plant-info-analyzing" id="plant-info-analyzing">
+    <div class="spinner" style="width:48px;height:48px;border-width:4px;border-color:rgba(255,255,255,.2);border-top-color:#fff;"></div>
+    <p style="color:#fff;font-size:.95rem;font-weight:600;margin-top:16px;" data-i18n="analyzing_text">Analyzing your plant</p>
+  </div>
+
+  <!-- Content (shown after analysis) -->
+  <div class="plant-info-content" id="plant-info-content" style="display:none;">
+
+    <!-- Hero image -->
+    <div class="plant-hero" id="plant-hero">
+      <img id="plant-hero-img" src="" alt="Plant">
+      <div class="plant-hero-dots" id="plant-hero-dots"></div>
+      <button class="plant-close-btn" onclick="closePlantInfo()">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+
+    <!-- Scrollable body -->
+    <div class="plant-info-body" id="plant-info-body"></div>
+
+    <!-- Sticky Add to Garden -->
+    <div class="plant-info-footer">
+      <button class="plant-add-garden-btn" id="plant-add-garden-btn" onclick="addIdentifiedToGarden()">
+        <span class="material-icons-round">add</span>
+        <span data-i18n="add_to_garden_btn">Add to garden</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PLANT SHEET -->
+<div class="add-plant-sheet" id="add-plant-sheet" onclick="closeAddPlantOutside(event)">
+  <div class="add-plant-inner">
+    <div class="add-plant-handle"></div>
+    <div class="add-plant-header">
+      <span class="add-plant-title" data-i18n="add_plant_title">Add a Plant</span>
+      <button class="lang-close" onclick="closeAddPlant()">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <div class="add-plant-options">
+      <button class="add-plant-opt" onclick="addPlantBySnap()">
+        <span class="material-icons-round">camera_alt</span>
+        <span data-i18n="take_snap">Take a snap</span>
+      </button>
+      <button class="add-plant-opt secondary" onclick="showNameInput()">
+        <span class="material-icons-round">search</span>
+        <span data-i18n="search_by_name">Search by name</span>
+      </button>
+    </div>
+    <div id="name-input-section" style="display:none;">
+      <div class="name-input-wrap">
+        <input class="name-input-field" id="plant-name-input" data-i18n-placeholder="plant_name_placeholder" placeholder="e.g. Tomato, Rose, Cactus…" autocomplete="off">
+        <button class="name-add-btn" onclick="addPlantByName()">
+          <span class="material-icons-round" style="font-size:20px;">add</span>
+        </button>
+      </div>
+    </div>
+    <input type="file" accept="image/*" id="plant-snap-input" class="file-input" onchange="handlePlantSnap(this)">
+  </div>
+</div>
+
+<!-- PREMIUM MODAL -->
+<div class="premium-overlay" id="premium-modal" onclick="closePremiumOutside(event)">
+  <div class="premium-modal">
+    <div class="premium-close-row">
+      <button class="premium-close-btn" onclick="closePremium()">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+
+    <!-- Features grid -->
+    <div class="premium-features-grid">
+      <div class="pf-item"><span class="pf-icon">🔍</span><span class="pf-label" data-i18n="pf_identify">Identify Plant</span></div>
+      <div class="pf-item"><span class="pf-icon">🤖</span><span class="pf-label" data-i18n="pf_ai">AI</span></div>
+      <div class="pf-item"><span class="pf-icon">🩺</span><span class="pf-label" data-i18n="pf_diagnosis">Plant Diagnosis</span></div>
+      <div class="pf-item"><span class="pf-icon">💚</span><span class="pf-label" data-i18n="pf_health">Health Check</span></div>
+      <div class="pf-item"><span class="pf-icon">📤</span><span class="pf-label" data-i18n="pf_export">Ask to Export</span></div>
+      <div class="pf-item"><span class="pf-icon">✨</span><span class="pf-label" data-i18n="pf_solution">AI Solution</span></div>
+    </div>
+
+    <div class="premium-heading">
+      <h2 data-i18n="premium_heading">Limitless Access : Plant Doctor</h2>
+      <p data-i18n="premium_upgrade">Premium to Upgrade</p>
+    </div>
+
+    <div class="premium-divider"></div>
+
+    <div class="free-trial-row">
+      <span class="free-trial-label" data-i18n="free_trial">Not sure yet? Enable free trial</span>
+      <button class="toggle-pill" id="trial-toggle" onclick="this.classList.toggle('on')"></button>
+    </div>
+
+    <div class="plan-options">
+      <div class="plan-card selected" id="plan-yearly" onclick="selectPlan('yearly')">
+        <div class="plan-badge" data-i18n="off_badge">90% OFF</div>
+        <div class="plan-card-left">
+          <div class="plan-radio"></div>
+          <div>
+            <div class="plan-name" data-i18n="yearly_access">YEARLY ACCESS</div>
+            <div class="plan-price-sub">$34.99 <span data-i18n="per_year">per year</span></div>
+          </div>
+        </div>
+        <div class="plan-price-right">
+          <div class="plan-price-main">$0.67</div>
+          <div class="plan-price-per" data-i18n="per_week">per week</div>
+        </div>
+      </div>
+      <div class="plan-card" id="plan-weekly" onclick="selectPlan('weekly')">
+        <div class="plan-card-left">
+          <div class="plan-radio"></div>
+          <div>
+            <div class="plan-name" data-i18n="weekly_access">WEEKLY ACCESS</div>
+          </div>
+        </div>
+        <div class="plan-price-right">
+          <div class="plan-price-main">$6.99</div>
+          <div class="plan-price-per" data-i18n="per_week">per week</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="premium-continue-btn" onclick="continuePremium()" data-i18n="continue_btn">Continue</button>
+
+    <div class="premium-links">
+      <a href="#" onclick="return false;" data-i18n="terms_link">Terms</a>
+      <a href="#" onclick="return false;" data-i18n="restore_link">Restore</a>
+      <a href="#" onclick="return false;" data-i18n="privacy_link">Privacy</a>
+    </div>
+  </div>
+</div>
+
+<!-- INFO MODAL (FAQ / Privacy / Terms) -->
+<div class="modal-overlay" id="info-modal" onclick="closeModalOutside(event,'info-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="info-modal-title">FAQ</span>
+      <button class="modal-close" onclick="closeModal('info-modal')">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <div class="modal-body" id="info-modal-body"></div>
+  </div>
+</div>
+
+<!-- LANGUAGE PANEL -->
+<div class="lang-panel" id="lang-panel" onclick="closeLangPanelOutside(event)">
+  <div class="lang-sheet">
+    <div class="lang-handle"></div>
+    <div class="lang-sheet-header">
+      <span class="lang-sheet-title" data-i18n="lang_panel_title">Choose Language</span>
+      <button class="lang-close" onclick="closeLangPanel()">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <div class="lang-options">
+      <button class="lang-opt" id="lang-opt-en" onclick="setLang('en')">
+        <span class="lang-flag">🇬🇧</span>
+        <span class="lang-name">English</span>
+      </button>
+      <button class="lang-opt" id="lang-opt-fr" onclick="setLang('fr')">
+        <span class="lang-flag">🇫🇷</span>
+        <span class="lang-name">Français</span>
+      </button>
+      <button class="lang-opt" id="lang-opt-ar" onclick="setLang('ar')">
+        <span class="lang-flag">🇲🇦</span>
+        <span class="lang-name">العربية</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="material-icons-round">check_circle</span>
+  <span id="toast-text">Saved!</span>
+</div>
+
+<!-- ═══════════════════════════
+     JAVASCRIPT
+═══════════════════════════ -->
+<script>
+// ══════════════════════════════════
+//  TRANSLATIONS
+// ══════════════════════════════════
+const TRANSLATIONS = {
+  en: {
+    dir: 'ltr',
+    lang_label: 'EN',
+    diagnose_title: 'Plant Disease\nDiagnosis',
+    diagnose_subtitle: "Upload a photo or describe your plant's symptoms",
+    photo_label: 'Take a photo of your plant',
+    camera_btn: 'Camera',
+    gallery_btn: 'Gallery',
+    retake_btn: 'Retake',
+    analyzing_text: 'Analyzing your plant',
+    or_describe: 'Or describe symptoms',
+    search_placeholder: 'e.g. brown spots, yellowing leaves…',
+    history_title: 'Diagnosis\nHistory',
+    history_subtitle: 'Your past plant diagnoses',
+    tab_diagnose: 'Diagnose',
+    tab_history: 'History',
+    result_modal_title: 'Diagnosis Result',
+    detail_modal_title: 'Diagnosis Details',
+    save_btn: 'Save to History',
+    delete_btn: 'Delete',
+    lang_panel_title: 'Choose Language',
+    confidence_label: 'Confidence level',
+    confident: 'confident',
+    symptoms_sec: 'Symptoms',
+    causes_sec: 'Possible Causes',
+    treatment_sec: 'Treatment',
+    prevention_sec: 'Prevention',
+    notes_sec: 'Treatment Notes',
+    notes_placeholder: 'Add your treatment notes…',
+    save_notes_btn: 'Save Notes',
+    diagnosed_on: 'Diagnosed on',
+    no_notes: 'No treatment notes added yet.',
+    empty_history: 'No diagnoses saved yet.\nTake a photo to get started!',
+    toast_saved: 'Diagnosis saved to history!',
+    toast_notes: 'Notes saved successfully!',
+    toast_deleted: 'Diagnosis deleted.',
+    confirm_delete: 'Are you sure you want to delete this diagnosis?',
+    toast_lang: 'Language changed to English',
+    ai_error_title: 'Analysis Failed',
+    ai_error_sub: 'Could not analyze. Please try again with a clearer photo.',
+    ai_thinking: 'AI is analyzing symptoms…',
+    tap_details: '→ Tap to see full diagnosis',
+    diagnosis_singular: 'diagnosis saved',
+    diagnosis_plural: 'diagnoses saved',
+    settings_ai: 'AI Configuration',
+    apikey_label: 'Anthropic API Key',
+    apikey_placeholder: 'sk-ant-api03-…',
+    apikey_save: 'Save',
+    apikey_not_set: 'No key saved — AI diagnosis disabled',
+    apikey_active: '✓ API key saved — AI diagnosis enabled',
+    apikey_saved: 'API key saved! AI diagnosis is now active.',
+    apikey_empty: 'Please enter a valid API key.',
+    apikey_invalid: 'Invalid API key — please check and re-enter in Settings.',
+    apikey_test: 'Test Key', apikey_test_ok: 'API key is valid! ✅', apikey_cleared: 'API key removed.',
+    no_key_title: 'API Key required',
+    no_key_sub: 'Add your Anthropic API key in Settings to enable real AI diagnosis.',
+    go_settings: 'Go to Settings',
+    // Identify Plant
+    add_to_garden_btn: 'Add to garden',
+    also_known: 'Also known as', botanical_name: 'Botanical Name:',
+    desc_section: 'Description', show_more: 'Show more', show_less: 'Show less',
+    edible_parts: 'Edible Parts:',
+    general_section: 'General', natural_habitats: 'Natural Habitats',
+    origin_countries: 'Origin Countries', env_benefits: 'Environmental Benefits',
+    life_cycle: 'Life Cycle', leaf_retention: 'Leaf Retention',
+    characteristics_section: 'Characteristics', physical_section: 'Physical',
+    height: 'Height', crown_width: 'Crown Width', growth_form: 'Growth Form', growth_style: 'Growth Style',
+    development_section: 'Development', growth_label: 'Growth',
+    slow_label: 'Slow', average_label: 'Average', fast_label: 'Fast',
+    time_mature: 'Time to Mature Height', growth_speed: 'Growth Speed', propagation: 'Propagation',
+    appearance_section: 'Appearance', ap_leaves: 'Leaves', ap_flowers: 'Flowers', ap_fruits: 'Fruits',
+    texture_label: 'Texture', colors_label: 'Colors',
+    growing_conditions: 'Growing Conditions', temperature_section: 'Temperature',
+    temp_ideal: 'Ideal', temp_survives: 'Survives', hardiness_zones: 'Hardiness Zones',
+    light_section: 'Light', light_amount: 'Light Amount', light_intensity: 'Intensity', preferred_light: 'Preferred Light',
+    soil_water_section: 'Soil & Water', soil_ph: 'Soil pH', soil_types: 'Soil Types', humidity: 'Humidity',
+    location_section: 'Location', indoor_rooms: 'Best Indoor Rooms', window_distance: 'Window Distance', outdoor_spots: 'Outdoor Spots',
+    care_guides: 'Care guides', watering_section: 'Watering',
+    spring: 'Spring', summer: 'Summer', fall: 'Fall', winter: 'Winter', water_amount: 'Water Amount',
+    pests_diseases: 'Pests & Diseases', common_pests: 'Common Pests',
+    common_diseases: 'Common Diseases', resistant_to: 'Resistant To', attracts: 'Attracts',
+    taxonomy_section: 'Taxanomy', classification_section: 'Classification',
+    tx_kingdom: 'Kingdom', tx_phylum: 'Phylum', tx_class: 'Class',
+    tx_order: 'Order', tx_family: 'Family', tx_genus: 'Genus', tx_sci_name: 'Scientific Name',
+    have_questions: 'Have questions?', ask_botanist: 'Ask AI Botanist',
+    botanist_sub: 'Get advice specific to your case', get_help: 'Get help',
+    feedback_q: 'Do you like the information about the plant?',
+    feedback_thanks: 'Thank you for your feedback! 🌿', feedback_noted: 'Thanks, we\'ll improve!',
+    botanist_coming: 'AI Botanist coming soon!',
+    // Garden
+    garden_title: 'My\nGarden', garden_subtitle: 'Track and care for your plants',
+    identify_plant: 'Identify Plant', plant_diagnosis: 'Plant Diagnosis', health_check: 'Health Check',
+    my_plants: 'My Plants', add_plant_btn: 'Add a Plant',
+    garden_empty_title: 'Garden is empty.', garden_empty_sub: 'Add a plant for personalized care and health tracking.',
+    add_plant_title: 'Add a Plant', take_snap: 'Take a snap', search_by_name: 'Search by name',
+    plant_name_placeholder: 'e.g. Tomato, Rose, Cactus…', plant_added: 'Plant added to your garden!',
+    plant_healthy: 'Healthy',
+    // Settings
+    settings_title: 'Settings', settings_general: 'General', settings_support: 'Support', settings_other: 'Other',
+    get_premium: 'Get Premium', premium_sub: 'Get access to premium features and use app without any restriction & distractions.',
+    premium_btn: 'Premium', pref_language: 'Preferred Language', faq: 'FAQ',
+    privacy_policy: 'Privacy Policy', terms_use: 'Terms of Use', share_app: 'Share this app', rate_app: 'Rate this app',
+    toast_share: 'Link copied! Share with your friends.', toast_rate: 'Thank you for your support! ⭐',
+    tab_garden: 'Garden', tab_settings: 'Settings',
+    // Premium modal
+    pf_identify: 'Identify Plant', pf_ai: 'AI', pf_diagnosis: 'Plant Diagnosis',
+    pf_health: 'Health Check', pf_export: 'Ask to Export', pf_solution: 'AI Solution',
+    premium_heading: 'Limitless Access : Plant Doctor', premium_upgrade: 'Premium to Upgrade',
+    free_trial: 'Not sure yet? Enable free trial', off_badge: '90% OFF',
+    yearly_access: 'YEARLY ACCESS', weekly_access: 'WEEKLY ACCESS',
+    per_year: 'per year', per_week: 'per week',
+    continue_btn: 'Continue', terms_link: 'Terms', restore_link: 'Restore', privacy_link: 'Privacy',
+    toast_premium: 'Welcome to Premium! 🎉',
+    // FAQ/Info
+    faq_title: 'FAQ', privacy_title: 'Privacy Policy', terms_title: 'Terms of Use',
+    faq_content: `<div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">help_outline</span>How does the diagnosis work?</div><p class="detail-text">Take or upload a photo of your plant's leaf, fruit or stem. Our AI analyzes the image and suggests the most likely disease with treatment steps.</p></div><div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">help_outline</span>How accurate is the AI?</div><p class="detail-text">Our model achieves 85–92% accuracy on common crop diseases. For critical cases, always consult an agronomist.</p></div><div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">help_outline</span>Is my data private?</div><p class="detail-text">Yes. Photos are analyzed in real-time and never stored on our servers. All history stays on your device.</p></div>`,
+    privacy_content: `<div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">shield</span>Data Collection</div><p class="detail-text">Smart Plant Doctor does not collect personal information. No account is required to use the app.</p></div><div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">shield</span>Photos &amp; Images</div><p class="detail-text">Photos you upload are processed locally or via encrypted API. They are never stored on our servers.</p></div><div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">shield</span>Local Storage</div><p class="detail-text">Diagnosis history is saved only on your device and can be deleted at any time from the app.</p></div>`,
+    terms_content: `<div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">gavel</span>Usage</div><p class="detail-text">Smart Plant Doctor is provided for informational purposes only. It should not replace professional agricultural advice.</p></div><div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">gavel</span>Liability</div><p class="detail-text">We are not liable for any crop loss or damage resulting from decisions made based on app diagnoses.</p></div><div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">gavel</span>Updates</div><p class="detail-text">These terms may be updated periodically. Continued use of the app implies acceptance of updated terms.</p></div>`
+  },
+  fr: {
+    dir: 'ltr',
+    lang_label: 'FR',
+    diagnose_title: 'Diagnostic\ndes Plantes',
+    diagnose_subtitle: 'Téléchargez une photo ou décrivez les symptômes',
+    photo_label: 'Prenez une photo de votre plante',
+    camera_btn: 'Caméra',
+    gallery_btn: 'Galerie',
+    retake_btn: 'Reprendre',
+    analyzing_text: 'Analyse en cours',
+    or_describe: 'Ou décrivez les symptômes',
+    search_placeholder: 'ex: taches brunes, feuilles qui jaunissent…',
+    history_title: 'Historique\ndes Diagnostics',
+    history_subtitle: 'Vos diagnostics de plantes précédents',
+    tab_diagnose: 'Diagnostic',
+    tab_history: 'Historique',
+    result_modal_title: 'Résultat du Diagnostic',
+    detail_modal_title: 'Détails du Diagnostic',
+    save_btn: 'Enregistrer',
+    delete_btn: 'Supprimer',
+    lang_panel_title: 'Choisir la langue',
+    confidence_label: 'Niveau de confiance',
+    confident: 'confiant',
+    symptoms_sec: 'Symptômes',
+    causes_sec: 'Causes possibles',
+    treatment_sec: 'Traitement',
+    prevention_sec: 'Prévention',
+    notes_sec: 'Notes de traitement',
+    notes_placeholder: 'Ajoutez vos notes de traitement…',
+    save_notes_btn: 'Enregistrer',
+    diagnosed_on: 'Diagnostiqué le',
+    no_notes: 'Aucune note de traitement ajoutée.',
+    empty_history: 'Aucun diagnostic enregistré.\nPrenez une photo pour commencer !',
+    toast_saved: 'Diagnostic enregistré !',
+    toast_notes: 'Notes enregistrées !',
+    toast_deleted: 'Diagnostic supprimé.',
+    confirm_delete: 'Voulez-vous vraiment supprimer ce diagnostic ?',
+    toast_lang: 'Langue changée en Français',
+    ai_error_title: 'Analyse échouée',
+    ai_error_sub: "Impossible d'analyser. Essayez avec une photo plus nette.",
+    ai_thinking: 'L\'IA analyse les symptômes…',
+    tap_details: '→ Appuyer pour voir le diagnostic complet',
+    diagnosis_singular: 'diagnostic enregistré',
+    diagnosis_plural: 'diagnostics enregistrés',
+    settings_ai: 'Configuration IA',
+    apikey_label: 'Clé API Anthropic',
+    apikey_placeholder: 'sk-ant-api03-…',
+    apikey_save: 'Enregistrer',
+    apikey_not_set: 'Aucune clé — diagnostic IA désactivé',
+    apikey_active: '✓ Clé enregistrée — diagnostic IA activé',
+    apikey_saved: 'Clé API enregistrée ! Le diagnostic IA est actif.',
+    apikey_empty: 'Veuillez entrer une clé API valide.',
+    apikey_invalid: 'Clé API invalide — vérifiez et re-saisissez dans les paramètres.',
+    apikey_test: 'Tester', apikey_test_ok: 'Clé API valide! ✅', apikey_cleared: 'Clé API supprimée.',
+    no_key_title: 'Clé API requise',
+    no_key_sub: 'Ajoutez votre clé API Anthropic dans les paramètres.',
+    go_settings: 'Aller aux paramètres',
+    add_to_garden_btn: 'Ajouter au jardin',
+    also_known: 'Aussi connu sous', botanical_name: 'Nom botanique:',
+    desc_section: 'Description', show_more: 'Voir plus', show_less: 'Voir moins',
+    edible_parts: 'Parties comestibles:',
+    general_section: 'Général', natural_habitats: 'Habitats naturels',
+    origin_countries: 'Pays d\'origine', env_benefits: 'Bénéfices environnementaux',
+    life_cycle: 'Cycle de vie', leaf_retention: 'Rétention des feuilles',
+    characteristics_section: 'Caractéristiques', physical_section: 'Physique',
+    height: 'Hauteur', crown_width: 'Largeur couronne', growth_form: 'Forme de croissance', growth_style: 'Style de croissance',
+    development_section: 'Développement', growth_label: 'Croissance',
+    slow_label: 'Lent', average_label: 'Moyen', fast_label: 'Rapide',
+    time_mature: 'Temps à maturité', growth_speed: 'Vitesse de croissance', propagation: 'Propagation',
+    appearance_section: 'Apparence', ap_leaves: 'Feuilles', ap_flowers: 'Fleurs', ap_fruits: 'Fruits',
+    texture_label: 'Texture', colors_label: 'Couleurs',
+    growing_conditions: 'Conditions de culture', temperature_section: 'Température',
+    temp_ideal: 'Idéal', temp_survives: 'Survie', hardiness_zones: 'Zones de rusticité',
+    light_section: 'Lumière', light_amount: 'Quantité de lumière', light_intensity: 'Intensité', preferred_light: 'Lumière préférée',
+    soil_water_section: 'Sol & Eau', soil_ph: 'pH du sol', soil_types: 'Types de sol', humidity: 'Humidité',
+    location_section: 'Emplacement', indoor_rooms: 'Pièces intérieures', window_distance: 'Distance fenêtre', outdoor_spots: 'Emplacements extérieurs',
+    care_guides: 'Guides d\'entretien', watering_section: 'Arrosage',
+    spring: 'Printemps', summer: 'Été', fall: 'Automne', winter: 'Hiver', water_amount: 'Quantité d\'eau',
+    pests_diseases: 'Parasites & Maladies', common_pests: 'Parasites courants',
+    common_diseases: 'Maladies courantes', resistant_to: 'Résistant à', attracts: 'Attire',
+    taxonomy_section: 'Taxinomie', classification_section: 'Classification',
+    tx_kingdom: 'Règne', tx_phylum: 'Phylum', tx_class: 'Classe',
+    tx_order: 'Ordre', tx_family: 'Famille', tx_genus: 'Genre', tx_sci_name: 'Nom scientifique',
+    have_questions: 'Des questions?', ask_botanist: 'Demander à l\'IA Botaniste',
+    botanist_sub: 'Obtenez des conseils spécifiques', get_help: 'Aide',
+    feedback_q: 'Les informations sur la plante vous ont-elles plu?',
+    feedback_thanks: 'Merci pour votre retour! 🌿', feedback_noted: 'Merci, nous allons améliorer!',
+    botanist_coming: 'IA Botaniste bientôt disponible!',
+    garden_title: 'Mon\nJardin', garden_subtitle: 'Suivez et soignez vos plantes',
+    identify_plant: 'Identifier', plant_diagnosis: 'Diagnostic', health_check: 'Santé',
+    my_plants: 'Mes Plantes', add_plant_btn: 'Ajouter une plante',
+    garden_empty_title: 'Jardin vide.', garden_empty_sub: 'Ajoutez une plante pour un suivi personnalisé.',
+    add_plant_title: 'Ajouter une plante', take_snap: 'Prendre une photo', search_by_name: 'Chercher par nom',
+    plant_name_placeholder: 'ex: Tomate, Rose, Cactus…', plant_added: 'Plante ajoutée au jardin !',
+    plant_healthy: 'En bonne santé',
+    settings_title: 'Paramètres', settings_general: 'Général', settings_support: 'Support', settings_other: 'Autre',
+    get_premium: 'Obtenir Premium', premium_sub: 'Accédez aux fonctionnalités premium sans restriction.',
+    premium_btn: 'Premium', pref_language: 'Langue préférée', faq: 'FAQ',
+    privacy_policy: 'Politique de confidentialité', terms_use: "Conditions d'utilisation",
+    share_app: 'Partager l\'app', rate_app: 'Évaluer l\'app',
+    toast_share: 'Lien copié !', toast_rate: 'Merci pour votre soutien ! ⭐',
+    tab_garden: 'Jardin', tab_settings: 'Paramètres',
+    pf_identify: 'Identifier', pf_ai: 'IA', pf_diagnosis: 'Diagnostic',
+    pf_health: 'Santé', pf_export: 'Exporter', pf_solution: 'Solution IA',
+    premium_heading: 'Accès Illimité : Plant Doctor', premium_upgrade: 'Passer à Premium',
+    free_trial: 'Pas sûr ? Essai gratuit', off_badge: '-90%',
+    yearly_access: 'ACCÈS ANNUEL', weekly_access: 'ACCÈS HEBDO',
+    per_year: 'par an', per_week: 'par semaine',
+    continue_btn: 'Continuer', terms_link: 'CGU', restore_link: 'Restaurer', privacy_link: 'Confidentialité',
+    toast_premium: 'Bienvenue en Premium ! 🎉',
+    faq_title: 'FAQ', privacy_title: 'Confidentialité', terms_title: 'CGU',
+    faq_content: `<div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">help_outline</span>Comment fonctionne le diagnostic ?</div><p class="detail-text">Prenez ou importez une photo de la feuille, du fruit ou de la tige. Notre IA analyse l'image et suggère la maladie la plus probable avec des étapes de traitement.</p></div><div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">help_outline</span>Quelle est la précision de l'IA ?</div><p class="detail-text">Notre modèle atteint 85–92 % de précision sur les maladies courantes. Pour les cas critiques, consultez toujours un agronome.</p></div>`,
+    privacy_content: `<div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">shield</span>Collecte de données</div><p class="detail-text">Smart Plant Doctor ne collecte pas d'informations personnelles. Aucun compte n'est requis.</p></div><div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">shield</span>Photos</div><p class="detail-text">Les photos sont traitées localement ou via une API chiffrée. Elles ne sont jamais stockées sur nos serveurs.</p></div>`,
+    terms_content: `<div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">gavel</span>Utilisation</div><p class="detail-text">Smart Plant Doctor est fourni à titre informatif uniquement. Il ne remplace pas les conseils agricoles professionnels.</p></div>`
+  },
+  ar: {
+    dir: 'rtl',
+    lang_label: 'ع',
+    diagnose_title: 'تشخيص\nأمراض النباتات',
+    diagnose_subtitle: 'ارفع صورة أو اكتب أعراض النبات',
+    photo_label: 'التقط صورة للنبات',
+    camera_btn: 'الكاميرا',
+    gallery_btn: 'المعرض',
+    retake_btn: 'إعادة',
+    analyzing_text: 'جاري تحليل النبات',
+    or_describe: 'أو اكتب الأعراض',
+    search_placeholder: 'مثال: بقع بنية، اصفرار الأوراق…',
+    history_title: 'سجل\nالتشخيصات',
+    history_subtitle: 'تشخيصاتك السابقة للنباتات',
+    tab_diagnose: 'تشخيص',
+    tab_history: 'السجل',
+    result_modal_title: 'نتيجة التشخيص',
+    detail_modal_title: 'تفاصيل التشخيص',
+    save_btn: 'حفظ في السجل',
+    delete_btn: 'حذف',
+    lang_panel_title: 'اختر اللغة',
+    confidence_label: 'مستوى الثقة',
+    confident: 'دقة',
+    symptoms_sec: 'الأعراض',
+    causes_sec: 'الأسباب المحتملة',
+    treatment_sec: 'العلاج',
+    prevention_sec: 'الوقاية',
+    notes_sec: 'ملاحظات العلاج',
+    notes_placeholder: 'أضف ملاحظاتك حول العلاج…',
+    save_notes_btn: 'حفظ الملاحظات',
+    diagnosed_on: 'تم التشخيص في',
+    no_notes: 'لا توجد ملاحظات مضافة بعد.',
+    empty_history: 'لا توجد تشخيصات محفوظة بعد.\nالتقط صورة للبدء!',
+    toast_saved: 'تم حفظ التشخيص في السجل!',
+    toast_notes: 'تم حفظ الملاحظات بنجاح!',
+    toast_deleted: 'تم حذف التشخيص.',
+    confirm_delete: 'هل أنت متأكد من حذف هذا التشخيص؟',
+    toast_lang: 'تم تغيير اللغة إلى العربية',
+    ai_error_title: 'فشل التحليل',
+    ai_error_sub: 'تعذر التحليل. جرب مرة أخرى بصورة أوضح.',
+    ai_thinking: 'الذكاء الاصطناعي يحلل الأعراض…',
+    tap_details: '← اضغط لرؤية التشخيص الكامل',
+    diagnosis_singular: 'تشخيص محفوظ',
+    diagnosis_plural: 'تشخيصات محفوظة',
+    settings_ai: 'إعدادات الذكاء الاصطناعي',
+    apikey_label: 'مفتاح Anthropic API',
+    apikey_placeholder: 'sk-ant-api03-…',
+    apikey_save: 'حفظ',
+    apikey_not_set: 'لا يوجد مفتاح — التشخيص بالذكاء الاصطناعي معطل',
+    apikey_active: '✓ المفتاح محفوظ — التشخيص بالذكاء الاصطناعي مفعّل',
+    apikey_saved: 'تم حفظ مفتاح API! التشخيص بالذكاء الاصطناعي نشط الآن.',
+    apikey_empty: 'الرجاء إدخال مفتاح API صالح.',
+    apikey_invalid: 'مفتاح API غير صالح — تحقق منه وأعد إدخاله في الإعدادات.',
+    apikey_test: 'اختبار المفتاح', apikey_test_ok: 'مفتاح API صالح! ✅', apikey_cleared: 'تم حذف مفتاح API.',
+    no_key_title: 'مفتاح API مطلوب',
+    no_key_sub: 'أضف مفتاح Anthropic API في الإعدادات لتفعيل التشخيص الذكي.',
+    go_settings: 'الذهاب إلى الإعدادات',
+    add_to_garden_btn: 'إضافة إلى الحديقة',
+    also_known: 'يُعرف أيضاً بـ', botanical_name: 'الاسم النباتي:',
+    desc_section: 'الوصف', show_more: 'عرض المزيد', show_less: 'عرض أقل',
+    edible_parts: 'الأجزاء الصالحة للأكل:',
+    general_section: 'عام', natural_habitats: 'الموائل الطبيعية',
+    origin_countries: 'دول المنشأ', env_benefits: 'الفوائد البيئية',
+    life_cycle: 'دورة الحياة', leaf_retention: 'احتباس الأوراق',
+    characteristics_section: 'الخصائص', physical_section: 'المظهر الجسدي',
+    height: 'الارتفاع', crown_width: 'عرض التاج', growth_form: 'شكل النمو', growth_style: 'نمط النمو',
+    development_section: 'التطور', growth_label: 'النمو',
+    slow_label: 'بطيء', average_label: 'متوسط', fast_label: 'سريع',
+    time_mature: 'الوقت حتى النضج', growth_speed: 'سرعة النمو', propagation: 'التكاثر',
+    appearance_section: 'المظهر', ap_leaves: 'الأوراق', ap_flowers: 'الأزهار', ap_fruits: 'الثمار',
+    texture_label: 'الملمس', colors_label: 'الألوان',
+    growing_conditions: 'ظروف النمو', temperature_section: 'درجة الحرارة',
+    temp_ideal: 'مثالية', temp_survives: 'تتحمل', hardiness_zones: 'مناطق الصلابة',
+    light_section: 'الضوء', light_amount: 'كمية الضوء', light_intensity: 'الشدة', preferred_light: 'الضوء المفضل',
+    soil_water_section: 'التربة والماء', soil_ph: 'درجة حموضة التربة', soil_types: 'أنواع التربة', humidity: 'الرطوبة',
+    location_section: 'الموقع', indoor_rooms: 'أفضل الغرف الداخلية', window_distance: 'المسافة من النافذة', outdoor_spots: 'الأماكن الخارجية',
+    care_guides: 'أدلة العناية', watering_section: 'الري',
+    spring: 'الربيع', summer: 'الصيف', fall: 'الخريف', winter: 'الشتاء', water_amount: 'كمية الماء',
+    pests_diseases: 'الآفات والأمراض', common_pests: 'الآفات الشائعة',
+    common_diseases: 'الأمراض الشائعة', resistant_to: 'مقاوم لـ', attracts: 'يجذب',
+    taxonomy_section: 'التصنيف العلمي', classification_section: 'التصنيف',
+    tx_kingdom: 'المملكة', tx_phylum: 'الشعبة', tx_class: 'الرتبة',
+    tx_order: 'الطائفة', tx_family: 'الفصيلة', tx_genus: 'الجنس', tx_sci_name: 'الاسم العلمي',
+    have_questions: 'لديك أسئلة؟', ask_botanist: 'اسأل عالم النبات الذكي',
+    botanist_sub: 'احصل على نصائح خاصة بحالتك', get_help: 'احصل على مساعدة',
+    feedback_q: 'هل أعجبك هذا المعلومات عن النبات؟',
+    feedback_thanks: 'شكراً على ملاحظاتك! 🌿', feedback_noted: 'شكراً، سنحسّن!',
+    botanist_coming: 'عالم النبات الذكي قادم قريباً!',
+    garden_title: 'حديقتي', garden_subtitle: 'تتبع نباتاتك والعناية بها',
+    identify_plant: 'تعرف على النبات', plant_diagnosis: 'تشخيص', health_check: 'فحص الصحة',
+    my_plants: 'نباتاتي', add_plant_btn: 'إضافة نبات',
+    garden_empty_title: 'الحديقة فارغة.', garden_empty_sub: 'أضف نباتاً لمتابعة صحته والعناية به.',
+    add_plant_title: 'إضافة نبات', take_snap: 'التقط صورة', search_by_name: 'ابحث بالاسم',
+    plant_name_placeholder: 'مثال: طماطم، ورد، صبار…', plant_added: 'تم إضافة النبات إلى حديقتك!',
+    plant_healthy: 'بصحة جيدة',
+    settings_title: 'الإعدادات', settings_general: 'عام', settings_support: 'الدعم', settings_other: 'أخرى',
+    get_premium: 'احصل على Premium', premium_sub: 'احصل على ميزات متميزة واستخدم التطبيق بدون قيود.',
+    premium_btn: 'Premium', pref_language: 'اللغة المفضلة', faq: 'الأسئلة الشائعة',
+    privacy_policy: 'سياسة الخصوصية', terms_use: 'شروط الاستخدام',
+    share_app: 'شارك التطبيق', rate_app: 'قيّم التطبيق',
+    toast_share: 'تم نسخ الرابط!', toast_rate: 'شكراً على دعمك! ⭐',
+    tab_garden: 'الحديقة', tab_settings: 'الإعدادات',
+    pf_identify: 'تعرف على النبات', pf_ai: 'ذكاء اصطناعي', pf_diagnosis: 'تشخيص',
+    pf_health: 'فحص الصحة', pf_export: 'تصدير', pf_solution: 'حل AI',
+    premium_heading: 'وصول غير محدود : Plant Doctor', premium_upgrade: 'ترقية إلى Premium',
+    free_trial: 'غير متأكد؟ جرّب مجاناً', off_badge: 'خصم 90%',
+    yearly_access: 'اشتراك سنوي', weekly_access: 'اشتراك أسبوعي',
+    per_year: 'في السنة', per_week: 'في الأسبوع',
+    continue_btn: 'متابعة', terms_link: 'الشروط', restore_link: 'استعادة', privacy_link: 'الخصوصية',
+    toast_premium: 'مرحباً بك في Premium! 🎉',
+    faq_title: 'الأسئلة الشائعة', privacy_title: 'سياسة الخصوصية', terms_title: 'شروط الاستخدام',
+    faq_content: `<div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">help_outline</span>كيف يعمل التشخيص؟</div><p class="detail-text">التقط أو ارفع صورة لورقة أو ثمرة أو ساق النبات. يحلل الذكاء الاصطناعي الصورة ويقترح المرض الأكثر احتمالاً مع خطوات العلاج.</p></div><div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">help_outline</span>ما مدى دقة الذكاء الاصطناعي؟</div><p class="detail-text">يحقق نموذجنا دقة 85-92% على الأمراض الشائعة. للحالات الحرجة، استشر دائماً مهندساً زراعياً.</p></div>`,
+    privacy_content: `<div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">shield</span>جمع البيانات</div><p class="detail-text">لا يجمع التطبيق أي معلومات شخصية. لا يلزم إنشاء حساب لاستخدامه.</p></div><div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">shield</span>الصور</div><p class="detail-text">تُعالج الصور محلياً أو عبر API مشفرة ولا تُخزن على خوادمنا أبداً.</p></div>`,
+    terms_content: `<div class="detail-section"><div class="detail-section-title"><span class="material-icons-round">gavel</span>الاستخدام</div><p class="detail-text">يُقدم التطبيق للأغراض المعلوماتية فقط ولا يُغني عن الاستشارة الزراعية المتخصصة.</p></div>`
+  }
+};
+
+let currentLang = localStorage.getItem('spd_lang') || 'en';
+
+function t(key) {
+  return TRANSLATIONS[currentLang][key] || TRANSLATIONS['en'][key] || key;
+}
+
+function applyLang(lang) {
+  const tr = TRANSLATIONS[lang];
+  if (!tr) return;
+  currentLang = lang;
+  localStorage.setItem('spd_lang', lang);
+
+  // Direction
+  document.documentElement.lang = lang;
+  document.documentElement.dir = tr.dir;
+
+  // Update lang toggle button label
+  document.getElementById('lang-toggle-btn').textContent = tr.lang_label;
+
+  // Update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const val = tr[key];
+    if (val !== undefined) {
+      // Handle titles with \n as <br>
+      if (key.endsWith('_title')) {
+        el.innerHTML = val.replace(/\n/g, '<br>');
+      } else if (key === 'analyzing_text') {
+        el.innerHTML = val + '<span class="analyzing-dots"></span>';
+      } else {
+        el.textContent = val;
+      }
+    }
+  });
+
+  // Update placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    const val = tr[key];
+    if (val !== undefined) el.placeholder = val;
+  });
+
+  // Highlight selected lang button
+  ['en','fr','ar'].forEach(l => {
+    const btn = document.getElementById('lang-opt-' + l);
+    if (btn) btn.classList.toggle('selected', l === lang);
+  });
+
+  // Re-render history if visible
+  const histScreen = document.getElementById('screen-history');
+  if (histScreen && histScreen.classList.contains('active')) renderHistory();
+  // Re-render garden if visible
+  const gardenScreen = document.getElementById('screen-garden');
+  if (gardenScreen && gardenScreen.classList.contains('active')) renderGarden();
+  // Refresh API key status text in new language
+  updateApiKeyUI();
+}
+
+function setLang(lang) {
+  applyLang(lang);
+  closeLangPanel();
+  showToast(TRANSLATIONS[lang].toast_lang);
+}
+
+function openLangPanel() {
+  document.getElementById('lang-panel').classList.add('open');
+}
+function closeLangPanel() {
+  document.getElementById('lang-panel').classList.remove('open');
+}
+function closeLangPanelOutside(e) {
+  if (e.target === document.getElementById('lang-panel')) closeLangPanel();
+}
+
+// ══════════════════════════════════
+//  STATE
+// ══════════════════════════════════
+let currentPhotoUri = null;
+let currentDiagnosis = null;
+let selectedHistoryId = null;
+let isEditingNotes = false;
+let notesText = '';
+let darkMode = false;
+
+const STORAGE_KEY = 'spd_diagnoses';
+
+// ══════════════════════════════════
+//  MOCK DATA
+// ══════════════════════════════════
+const MOCK_DIAGNOSES = [
+  {
+    disease: 'Leaf Blight',
+    confidence: 85,
+    symptoms: ['Brown spots on leaves', 'Yellowing edges', 'Wilting'],
+    causes: ['Fungal infection', 'High humidity', 'Poor air circulation'],
+    treatment: 'Apply fungicide spray every 7 days for 3 weeks. Remove and dispose of infected leaves. Improve air circulation around the plant.',
+    prevention: 'Avoid overhead watering, ensure good drainage, remove infected leaves immediately, and space plants to allow air flow.'
+  },
+  {
+    disease: 'Powdery Mildew',
+    confidence: 78,
+    symptoms: ['White powdery coating on leaves', 'Stunted growth', 'Distorted or curled leaves'],
+    causes: ['High humidity with warm temperatures', 'Poor air circulation', 'Overcrowding of plants'],
+    treatment: 'Apply sulfur-based fungicide or baking soda solution (1 tbsp per litre). Prune heavily affected areas.',
+    prevention: 'Plant in sunny open locations, space plants properly, avoid overhead watering, and select resistant varieties.'
+  },
+  {
+    disease: 'Root Rot',
+    confidence: 91,
+    symptoms: ['Yellowing leaves', 'Soft and mushy roots', 'Stunted growth', 'Plant wilting despite watering'],
+    causes: ['Overwatering', 'Poor drainage', 'Soil-borne fungal pathogens (Pythium, Phytophthora)'],
+    treatment: 'Remove affected roots, treat with hydrogen peroxide solution (3%), repot in fresh well-draining soil. Reduce watering frequency.',
+    prevention: 'Use well-draining soil mix, ensure pots have drainage holes, water only when the top inch of soil is dry.'
+  }
+];
+
+const MOCK_SEARCH_DB = [
+  { id: '1', name: 'Leaf Blight', symptoms: ['Brown spots', 'Yellowing', 'Wilting', 'dark lesions'], treatment: 'Fungicide application every 7 days' },
+  { id: '2', name: 'Root Rot', symptoms: ['Yellowing leaves', 'Soft roots', 'Stunted growth', 'mushy stem'], treatment: 'Improve drainage, reduce watering' },
+  { id: '3', name: 'Aphid Infestation', symptoms: ['Curled leaves', 'Sticky residue', 'Small insects', 'yellowing'], treatment: 'Insecticidal soap spray' },
+  { id: '4', name: 'Powdery Mildew', symptoms: ['White powder', 'White coating', 'Distorted leaves', 'stunted'], treatment: 'Sulfur-based fungicide' },
+  { id: '5', name: 'Rust Disease', symptoms: ['Orange pustules', 'Rusty spots', 'Leaf drop'], treatment: 'Remove infected parts, apply fungicide' },
+  { id: '6', name: 'Bacterial Wilt', symptoms: ['Sudden wilting', 'Yellowing', 'Water-soaked stem', 'collapse'], treatment: 'Remove infected plants, improve drainage' }
+];
+
+// ══════════════════════════════════
+//  THEME
+// ══════════════════════════════════
+function toggleTheme() {
+  darkMode = !darkMode;
+  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : '');
+  document.getElementById('theme-icon').textContent = darkMode ? 'light_mode' : 'dark_mode';
+}
+
+// ══════════════════════════════════
+//  TAB NAVIGATION
+// ══════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const tabBtn = document.getElementById('tab-' + name);
+  if (tabBtn) tabBtn.classList.add('active');
+  if (name === 'history') renderHistory();
+  if (name === 'garden')  renderGarden();
+}
+
+// ══════════════════════════════════
+//  FILE / PHOTO
+// ══════════════════════════════════
+function triggerCamera() {
+  document.getElementById('camera-input').click();
+}
+function triggerGallery() {
+  document.getElementById('gallery-input').click();
+}
+function handleFileInput(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentPhotoUri = e.target.result;
+    showPhotoPreview(currentPhotoUri);
+    simulateAnalysis();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+function showPhotoPreview(uri) {
+  const ph = document.getElementById('photo-placeholder');
+  const pc = document.getElementById('photo-container');
+  const img = document.getElementById('captured-photo');
+  ph.style.display = 'none';
+  pc.style.display = 'block';
+  img.src = uri;
+}
+function retakePhoto() {
+  currentPhotoUri = null;
+  currentDiagnosis = null;
+  document.getElementById('photo-placeholder').style.display = '';
+  document.getElementById('photo-container').style.display = 'none';
+  document.getElementById('captured-photo').src = '';
+}
+
+// ══════════════════════════════════
+//  AI ANALYSIS — IMAGE (Anthropic API)
+// ══════════════════════════════════
+const LANG_NAMES = { en: 'English', fr: 'French', ar: 'Arabic' };
+
+function buildImagePrompt() {
+  const lang = LANG_NAMES[currentLang] || 'English';
+  return `You are an expert plant pathologist. Analyze this plant image and diagnose the disease.
+IMPORTANT: Respond ONLY in ${lang} language. No other language allowed.
+Return ONLY a valid JSON object, no markdown, no extra text:
+{"disease":"disease name in ${lang}","confidence":85,"emoji":"🍂","symptoms":["symptom 1","symptom 2","symptom 3"],"causes":["cause 1","cause 2"],"treatment":"detailed treatment steps","prevention":"prevention tips"}
+If no disease is visible, use {"disease":"Healthy Plant","confidence":95,"emoji":"🌿","symptoms":["No visible symptoms"],"causes":["N/A"],"treatment":"No treatment needed","prevention":"Continue regular care"}`;
+}
+
+function buildTextPrompt(query) {
+  const lang = LANG_NAMES[currentLang] || 'English';
+  return `You are an expert plant pathologist. The user describes these plant symptoms: "${query}"
+IMPORTANT: Respond ONLY in ${lang} language. No other language allowed.
+Return ONLY a valid JSON object, no markdown, no extra text:
+{"disease":"disease name in ${lang}","confidence":78,"emoji":"🌿","symptoms":["symptom 1","symptom 2","symptom 3"],"causes":["cause 1","cause 2"],"treatment":"detailed treatment steps","prevention":"prevention tips"}`;
+}
+
+function parseAIResponse(text) {
+  if (!text) return null;
+  try {
+    // Remove markdown fences
+    let clean = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    // Find first { and last }
+    const start = clean.indexOf('{');
+    const end   = clean.lastIndexOf('}');
+    if (start === -1 || end === -1) return null;
+    const jsonStr = clean.substring(start, end + 1);
+    const parsed = JSON.parse(jsonStr);
+    // Ensure arrays for symptoms/causes
+    if (typeof parsed.symptoms === 'string') parsed.symptoms = [parsed.symptoms];
+    if (typeof parsed.causes === 'string')   parsed.causes   = [parsed.causes];
+    return parsed;
+  } catch(e) {
+    console.warn('parseAIResponse failed:', e.message, '\nRaw:', text);
+    return null;
+  }
+}
+
+async function analyzeWithAI(base64Image, mediaType) {
+  const key = getApiKey();
+  if (!key) throw new Error('NO_API_KEY');
+  let response;
+  try {
+    response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Image } },
+            { type: 'text', text: buildImagePrompt() }
+          ]
+        }]
+      })
+    });
+  } catch(netErr) {
+    throw new Error('NETWORK: ' + netErr.message);
+  }
+  const data = await response.json();
+  console.log('API response:', JSON.stringify(data).substring(0, 300));
+  if (data.error) throw new Error('API_ERR: ' + (data.error.message || JSON.stringify(data.error)));
+  const text = (data.content || []).map(i => i.text || '').join('');
+  const parsed = parseAIResponse(text);
+  if (!parsed) throw new Error('PARSE_FAIL: ' + text.substring(0, 200));
+  return parsed;
+}
+
+async function analyzeTextWithAI(query) {
+  const key = getApiKey();
+  if (!key) throw new Error('NO_API_KEY');
+  let response;
+  try {
+    response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: buildTextPrompt(query) }]
+      })
+    });
+  } catch(netErr) {
+    throw new Error('NETWORK: ' + netErr.message);
+  }
+  const data = await response.json();
+  if (data.error) throw new Error('API_ERR: ' + (data.error.message || JSON.stringify(data.error)));
+  const text = (data.content || []).map(i => i.text || '').join('');
+  const parsed = parseAIResponse(text);
+  if (!parsed) throw new Error('PARSE_FAIL');
+  return parsed;
+}
+
+async function simulateAnalysis() {
+  const analyzing = document.getElementById('analyzing-container');
+
+  // ── Guard: no API key ──
+  const key = getApiKey();
+  if (!key) {
+    showNoKeyAlert();
+    return;
+  }
+
+  analyzing.classList.add('show');
+
+  try {
+    const dataUrl   = currentPhotoUri;
+    const parts     = dataUrl.split(',');
+    const mediaType = parts[0].match(/:(.*?);/)[1];
+    const base64    = parts[1];
+
+    const result = await analyzeWithAI(base64, mediaType);
+
+    if (result) {
+      currentDiagnosis = result;
+    } else {
+      currentDiagnosis = {
+        disease: t('ai_error_title'), confidence: 0, emoji: '⚠️',
+        symptoms: [t('ai_error_sub')], causes: [t('ai_error_sub')],
+        treatment: t('ai_error_sub'), prevention: t('ai_error_sub')
+      };
+    }
+  } catch (err) {
+    const msg = err.message || '';
+    console.error('simulateAnalysis error:', msg);
+
+    // Auth / invalid key
+    const isAuth = msg.includes('API_ERR') && (
+      msg.toLowerCase().includes('auth') ||
+      msg.toLowerCase().includes('invalid') ||
+      msg.toLowerCase().includes('401') ||
+      msg.toLowerCase().includes('api_key')
+    );
+    if (isAuth) {
+      analyzing.classList.remove('show');
+      showBadKeyAlert(msg);
+      return;
+    }
+
+    // Network error
+    const isNetwork = msg.startsWith('NETWORK:');
+    // Parse fail  
+    const isParse = msg.startsWith('PARSE_FAIL');
+
+    const friendlyMsg = isNetwork
+      ? (currentLang === 'ar' ? 'خطأ في الاتصال بالإنترنت' : currentLang === 'fr' ? 'Erreur de connexion' : 'Network error — check your connection')
+      : isParse
+      ? (currentLang === 'ar' ? 'خطأ في قراءة الرد — حاول مرة أخرى' : currentLang === 'fr' ? 'Erreur de lecture — réessayez' : 'Could not read AI response — try again')
+      : msg.replace('API_ERR: ', '').replace('NETWORK: ', '');
+
+    currentDiagnosis = {
+      disease: t('ai_error_title'), confidence: 0, emoji: '⚠️',
+      symptoms: [friendlyMsg],
+      causes: [currentLang === 'ar' ? 'تحقق من مفتاح API في الإعدادات' : currentLang === 'fr' ? 'Vérifiez la clé API dans Paramètres' : 'Check your API key in Settings'],
+      treatment: currentLang === 'ar' ? 'اذهب إلى الإعدادات ← اختبر المفتاح' : currentLang === 'fr' ? 'Allez dans Paramètres → Tester la clé' : 'Go to Settings → Test Key',
+      prevention: currentLang === 'ar' ? 'تأكد من صلاحية المفتاح وتوفر رصيد الحساب' : currentLang === 'fr' ? 'Assurez-vous que la clé est valide et le compte approvisionné' : 'Make sure the key is valid and your account has credits'
+    };
+  }
+
+  analyzing.classList.remove('show');
+  openResultModal(currentDiagnosis);
+}
+
+function showNoKeyAlert() {
+  // Show inline alert banner on diagnose screen instead of broken result
+  const banner = document.getElementById('no-apikey-banner');
+  if (banner) {
+    banner.style.display = 'flex';
+    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Flash effect
+    banner.style.animation = 'none';
+    banner.offsetHeight; // reflow
+    banner.style.animation = 'pulse-warn .5s ease 3';
+  }
+  showToast('⚙️ ' + t('no_key_title'));
+}
+
+function showBadKeyAlert(detail) {
+  showToast('🔑 ' + t('apikey_invalid'));
+  switchTab('settings');
+}
+
+// ══════════════════════════════════
+//  RESULT MODAL — redesigned
+// ══════════════════════════════════
+function openResultModal(d) {
+  const overlay = document.getElementById('result-modal');
+
+  // Determine confidence tier
+  const tier = d.confidence >= 80 ? 'high' : d.confidence >= 50 ? 'med' : 'low';
+  const confColor = tier === 'high' ? '#34D399' : tier === 'med' ? '#FBBF24' : '#F87171';
+  const confBadgeClass = `diag-badge-conf-${tier}`;
+  const confIcon = tier === 'high' ? 'verified' : tier === 'med' ? 'warning' : 'error';
+  const severityLabel = tier === 'high'
+    ? (currentLang==='ar'?'تشخيص موثوق':currentLang==='fr'?'Diagnostic fiable':'Reliable diagnosis')
+    : tier === 'med'
+    ? (currentLang==='ar'?'تشخيص محتمل':currentLang==='fr'?'Diagnostic probable':'Probable diagnosis')
+    : (currentLang==='ar'?'غير مؤكد':currentLang==='fr'?'Incertain':'Uncertain');
+
+  // Hero — show plant photo if available
+  const heroImg = document.getElementById('diag-hero-img');
+  if (currentPhotoUri) {
+    heroImg.src = currentPhotoUri;
+    heroImg.style.display = 'block';
+  } else {
+    heroImg.src = '';
+    heroImg.style.display = 'none';
+  }
+
+  // Hero info
+  document.getElementById('diag-hero-info').innerHTML = `
+    <div class="diag-disease-name">${esc(d.emoji||'🌿')} ${esc(d.disease)}</div>
+    <div class="diag-badges">
+      <span class="diag-badge ${confBadgeClass}">
+        <span class="material-icons-round">${confIcon}</span>
+        ${d.confidence}% — ${severityLabel}
+      </span>
+    </div>
+  `;
+
+  // Body
+  const symptoms = Array.isArray(d.symptoms) ? d.symptoms : [d.symptoms];
+  const causes   = Array.isArray(d.causes)   ? d.causes   : [d.causes];
+
+  document.getElementById('result-modal-body').innerHTML = `
+    <!-- Confidence bar -->
+    <div class="diag-conf-bar-wrap">
+      <div class="diag-conf-bar-top">
+        <span>${t('confidence_label')}</span>
+        <span>${d.confidence}%</span>
+      </div>
+      <div class="diag-conf-bar">
+        <div class="diag-conf-bar-fill ${tier==='med'?'med':tier==='low'?'low':''}"
+             id="diag-bar-fill" style="width:0%" data-w="${d.confidence}%"></div>
+      </div>
+    </div>
+
+    <div class="diag-sep"></div>
+
+    <!-- Symptoms -->
+    <div class="diag-section">
+      <div class="diag-section-header">
+        <span class="material-icons-round">fact_check</span>${t('symptoms_sec')}
+      </div>
+      <div class="diag-list">
+        ${symptoms.map(s=>`<div class="diag-list-item"><div class="diag-list-dot"></div><span class="diag-list-text">${esc(s)}</span></div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Causes -->
+    <div class="diag-section">
+      <div class="diag-section-header">
+        <span class="material-icons-round">lightbulb</span>${t('causes_sec')}
+      </div>
+      <div class="diag-list">
+        ${causes.map(c=>`<div class="diag-list-item"><div class="diag-list-dot" style="background:#F59E0B"></div><span class="diag-list-text">${esc(c)}</span></div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Treatment -->
+    <div class="diag-section">
+      <div class="diag-section-header">
+        <span class="material-icons-round">healing</span>${t('treatment_sec')}
+      </div>
+      <div class="diag-text-box treatment">${esc(d.treatment||'—')}</div>
+    </div>
+
+    <!-- Prevention -->
+    <div class="diag-section">
+      <div class="diag-section-header">
+        <span class="material-icons-round">shield</span>${t('prevention_sec')}
+      </div>
+      <div class="diag-text-box prevention">${esc(d.prevention||'—')}</div>
+    </div>
+
+    <div style="height:8px;"></div>
+  `;
+
+  overlay.classList.add('open');
+
+  // Animate confidence bar
+  requestAnimationFrame(() => {
+    const fill = document.getElementById('diag-bar-fill');
+    if (fill) setTimeout(() => fill.style.width = fill.dataset.w, 100);
+  });
+}
+
+function detailSection(icon, title, type, content) {
+  const body = type === 'list'
+    ? content.map(c => `<div class="list-item"><span class="list-dot"></span>${esc(c)}</div>`).join('')
+    : `<p class="detail-text">${esc(content)}</p>`;
+  return `
+    <div class="detail-section">
+      <div class="detail-section-title">
+        <span class="material-icons-round">${icon}</span>${title}
+      </div>
+      ${body}
+    </div>`;
+}
+
+// ══════════════════════════════════
+//  SAVE DIAGNOSIS
+// ══════════════════════════════════
+function saveDiagnosis() {
+  if (!currentDiagnosis) return;
+  const diagnosisData = {
+    id: Date.now().toString(),
+    disease_name: currentDiagnosis.disease,
+    confidence: currentDiagnosis.confidence,
+    symptoms: currentDiagnosis.symptoms.join(', '),
+    causes: currentDiagnosis.causes.join(', '),
+    treatment: currentDiagnosis.treatment,
+    prevention: currentDiagnosis.prevention,
+    photo_uri: currentPhotoUri,
+    created_at: new Date().toISOString(),
+    notes: ''
+  };
+  const history = getHistory();
+  history.unshift(diagnosisData);
+  saveHistory(history);
+  closeModal('result-modal');
+  showToast(t('toast_saved'));
+}
+
+// ══════════════════════════════════
+//  SYMPTOM SEARCH — AI powered
+// ══════════════════════════════════
+let searchDebounce = null;
+
+function searchBySymptoms(query) {
+  const resultsEl = document.getElementById('search-results');
+  if (!query || query.trim().length < 3) { resultsEl.innerHTML = ''; return; }
+
+  // Show a "typing..." indicator
+  resultsEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;
+      background:var(--card);border-radius:var(--radius-sm);border:1px solid var(--border);">
+      <div class="spinner" style="width:20px;height:20px;border-width:2px;"></div>
+      <span style="font-size:.85rem;color:var(--text2);">${t('ai_thinking')}</span>
+    </div>`;
+
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(async () => {
+    try {
+      const result = await analyzeTextWithAI(query);
+      if (!result) { resultsEl.innerHTML = ''; return; }
+
+      // Store as pending diagnosis
+      currentDiagnosis = result;
+      currentPhotoUri  = null;
+
+      resultsEl.innerHTML = `
+        <div class="search-result-item card" onclick="openResultModal(currentDiagnosis)" style="cursor:pointer;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <span style="font-size:1.5rem;">${result.emoji || '🌿'}</span>
+            <div>
+              <div class="search-result-name">${esc(result.disease)}</div>
+              <div style="font-size:.74rem;color:${result.confidence>=80?'var(--success)':'var(--warn)'}; font-weight:700;">
+                ${result.confidence}% ${t('confident')}
+              </div>
+            </div>
+          </div>
+          <div class="search-result-symptoms">${Array.isArray(result.symptoms) ? result.symptoms.slice(0,2).join(' · ') : result.symptoms}</div>
+          <div class="search-result-treatment" style="margin-top:4px;">${t('tap_details')}</div>
+        </div>`;
+    } catch {
+      resultsEl.innerHTML = '';
+    }
+  }, 900);
+}
+
+// ══════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveHistory(h) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(h));
+}
+
+function renderHistory() {
+  const wrap = document.getElementById('history-list-wrap');
+  const history = getHistory();
+  if (!history.length) {
+    wrap.innerHTML = `
+      <div class="empty-state">
+        <span class="material-icons-round empty-icon">local_florist</span>
+        <p class="empty-text">${t('empty_history').replace('\n','<br>')}</p>
+      </div>`;
+    return;
+  }
+  // Update subtitle with count
+  const countLabel = history.length + ' ' + (history.length === 1 ? t('diagnosis_singular') : t('diagnosis_plural'));
+  const subtitleEl = document.querySelector('#screen-history .screen-subtitle');
+  if (subtitleEl) subtitleEl.textContent = countLabel;
+
+  wrap.innerHTML = `<div class="history-list">${history.map(item => historyCard(item)).join('')}</div>`;
+}
+
+function historyCard(item) {
+  const d = new Date(item.created_at);
+  const dateStr = d.toLocaleDateString() + ' · ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const confClass = item.confidence >= 80 ? 'conf-green' : 'conf-yellow';
+  const confIcon  = item.confidence >= 80 ? 'check_circle' : 'warning';
+  const thumbHtml = item.photo_uri
+    ? `<img src="${item.photo_uri}" alt="">`
+    : `<span class="material-icons-round">local_florist</span>`;
+
+  return `
+    <div class="history-card card" onclick="openDetailModal('${item.id}')">
+      <div class="history-thumb">${thumbHtml}</div>
+      <div class="history-info">
+        <div class="history-disease">${esc(item.disease_name)}</div>
+        <div class="history-date">${dateStr}</div>
+        <span class="history-conf ${confClass}">
+          <span class="material-icons-round">${confIcon}</span>
+          ${item.confidence}% ${t('confident')}
+        </span>
+      </div>
+      <div class="history-chevron"><span class="material-icons-round">chevron_right</span></div>
+    </div>`;
+}
+
+// ══════════════════════════════════
+//  DETAIL MODAL
+// ══════════════════════════════════
+function openDetailModal(id) {
+  const history = getHistory();
+  const item = history.find(h => h.id === id);
+  if (!item) return;
+  selectedHistoryId = id;
+  isEditingNotes = false;
+
+  const d = new Date(item.created_at);
+  const dateStr = d.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const confClass = item.confidence >= 80 ? 'conf-high' : 'conf-med';
+  const confIcon  = item.confidence >= 80 ? 'verified' : 'warning';
+
+  document.getElementById('detail-modal-body').innerHTML = `
+    ${item.photo_uri ? `<img src="${item.photo_uri}" class="modal-photo" alt="Plant">` : ''}
+    <div class="confidence-row">
+      <span class="disease-name">${esc(item.disease_name)}</span>
+      <span class="conf-badge ${confClass}">
+        <span class="material-icons-round">${confIcon}</span>
+        ${item.confidence}%
+      </span>
+    </div>
+    <p class="detail-text" style="margin-bottom:12px;">${t('diagnosed_on')} ${dateStr}</p>
+    <div class="divider"></div>
+    ${detailSection('healing', t('treatment_sec'), 'text', item.treatment)}
+    ${item.prevention ? detailSection('shield', t('prevention_sec'), 'text', item.prevention) : ''}
+    <div class="detail-section">
+      <div class="notes-header">
+        <div class="detail-section-title" style="margin-bottom:0;">
+          <span class="material-icons-round">notes</span>${t('notes_sec')}
+        </div>
+        <button class="notes-edit-btn" onclick="toggleNotesEdit('${id}')">
+          <span class="material-icons-round" id="notes-edit-icon">edit</span>
+        </button>
+      </div>
+      <div id="notes-display-area">
+        <p class="notes-display">${item.notes ? esc(item.notes) : t('no_notes')}</p>
+      </div>
+    </div>
+  `;
+  openModal('detail-modal');
+}
+
+function toggleNotesEdit(id) {
+  const history = getHistory();
+  const item = history.find(h => h.id === id);
+  if (!item) return;
+
+  isEditingNotes = !isEditingNotes;
+  document.getElementById('notes-edit-icon').textContent = isEditingNotes ? 'close' : 'edit';
+  const area = document.getElementById('notes-display-area');
+
+  if (isEditingNotes) {
+    notesText = item.notes || '';
+    area.innerHTML = `
+      <textarea class="notes-textarea" id="notes-textarea" placeholder="${t('notes_placeholder')}">${esc(notesText)}</textarea>
+      <button class="btn-save-notes" onclick="saveNotes('${id}')">${t('save_notes_btn')}</button>
+    `;
+    document.getElementById('notes-textarea').focus();
+  } else {
+    area.innerHTML = `<p class="notes-display">${item.notes ? esc(item.notes) : t('no_notes')}</p>`;
+  }
+}
+
+function saveNotes(id) {
+  const textarea = document.getElementById('notes-textarea');
+  if (!textarea) return;
+  const notes = textarea.value;
+  const history = getHistory();
+  const idx = history.findIndex(h => h.id === id);
+  if (idx === -1) return;
+  history[idx].notes = notes;
+  saveHistory(history);
+
+  isEditingNotes = false;
+  document.getElementById('notes-edit-icon').textContent = 'edit';
+  document.getElementById('notes-display-area').innerHTML = `
+    <p class="notes-display">${notes ? esc(notes) : t('no_notes')}</p>`;
+  showToast(t('toast_notes'));
+}
+
+function deleteDiagnosis() {
+  if (!selectedHistoryId) return;
+  if (!confirm(t('confirm_delete'))) return;
+  const history = getHistory().filter(h => h.id !== selectedHistoryId);
+  saveHistory(history);
+  closeModal('detail-modal');
+  renderHistory();
+  showToast(t('toast_deleted'));
+}
+
+// ══════════════════════════════════
+//  MODAL HELPERS
+// ══════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeModalOutside(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+
+// ══════════════════════════════════
+//  TOAST
+// ══════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-text').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════
+//  UTILS
+// ══════════════════════════════════
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ══════════════════════════════════
+//  API KEY MANAGEMENT
+// ══════════════════════════════════
+const APIKEY_STORAGE = 'spd_apikey';
+
+function getApiKey() {
+  return localStorage.getItem(APIKEY_STORAGE) || '';
+}
+
+function saveApiKey() {
+  const input = document.getElementById('apikey-input');
+  const key = input.value.trim();
+  if (!key) {
+    showToast(t('apikey_empty'));
+    return;
+  }
+  localStorage.setItem(APIKEY_STORAGE, key);
+  updateApiKeyUI();
+  showToast(t('apikey_saved'));
+  // Mask the field after save
+  input.value = key.substring(0, 12) + '●●●●●●●●●●●●●●●●';
+}
+
+function clearApiKey() {
+  localStorage.removeItem(APIKEY_STORAGE);
+  const input = document.getElementById('apikey-input');
+  if (input) input.value = '';
+  updateApiKeyUI();
+  showToast(t('apikey_cleared'));
+}
+
+async function testApiKey() {
+  const btn = document.getElementById('apikey-test-btn');
+  const key = getApiKey();
+  if (!key) { showToast('⚠️ ' + t('apikey_empty')); return; }
+  const origText = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5', max_tokens: 10,
+        messages: [{ role: 'user', content: 'Hi' }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) {
+      showToast('❌ ' + (data.error.message || t('apikey_invalid')));
+    } else {
+      showToast('✅ ' + t('apikey_test_ok'));
+    }
+  } catch(e) {
+    showToast('❌ ' + e.message);
+  }
+  if (btn) { btn.textContent = origText; btn.disabled = false; }
+}
+
+function updateApiKeyUI() {  const key    = getApiKey();
+  const status = document.getElementById('apikey-status');
+  const statusTxt = document.getElementById('apikey-status-text');
+  const banner = document.getElementById('no-apikey-banner');
+  const input  = document.getElementById('apikey-input');
+
+  if (key) {
+    status.className = 'apikey-status ok';
+    statusTxt.textContent = t('apikey_active');
+    // Show masked key
+    if (input && !input.value) input.value = key.substring(0, 12) + '●●●●●●●●●●●●●●●●';
+    if (banner) banner.style.display = 'none';
+  } else {
+    status.className = 'apikey-status empty';
+    statusTxt.textContent = t('apikey_not_set');
+    if (banner) banner.style.display = 'flex';
+  }
+}
+
+// ══════════════════════════════════
+//  IDENTIFY PLANT
+// ══════════════════════════════════
+let currentPlantData = null;
+let identifyPhotoDataUrl = null;
+let identifyAppearTab = 'leaves';
+
+function openIdentifyPlant() {
+  document.getElementById('identify-picker-sheet').classList.add('open');
+}
+function closeIdentifyPicker() {
+  document.getElementById('identify-picker-sheet').classList.remove('open');
+}
+function closeIdentifyPickerOutside(e) {
+  if (e.target === document.getElementById('identify-picker-sheet')) closeIdentifyPicker();
+}
+function triggerIdentifyCamera() {
+  document.getElementById('identify-camera-input').click();
+}
+function triggerIdentifyGallery() {
+  document.getElementById('identify-gallery-input').click();
+}
+
+function handleIdentifyPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  closeIdentifyPicker();
+  const reader = new FileReader();
+  reader.onload = async e => {
+    identifyPhotoDataUrl = e.target.result;
+    // Open modal + show analyzing
+    const overlay = document.getElementById('plant-info-modal');
+    overlay.classList.add('open');
+    document.getElementById('plant-info-analyzing').classList.add('show');
+    document.getElementById('plant-info-content').style.display = 'none';
+
+    try {
+      const key = getApiKey();
+      if (!key) throw new Error('NO_API_KEY');
+      const parts     = identifyPhotoDataUrl.split(',');
+      const mediaType = parts[0].match(/:(.*?);/)[1];
+      const base64    = parts[1];
+      const langName  = LANG_NAMES[currentLang] || 'English';
+      const prompt = `You are a botanist and plant identification expert. Analyze this plant image and identify it. Respond ONLY in ${langName}. Return ONLY valid JSON, no markdown:
+{"scientificName":"...","commonName":"...","botanicalGenus":"...","description":"2-3 sentence description","edibleParts":"root, leaf or null","general":{"naturalHabitats":"...","originCountries":"...","environmentalBenefits":"...","lifeCycle":"Perennial or Annual","leafRetention":"Evergreen or Deciduous"},"physical":{"heightCm":"30-100","crownWidthCm":"50-150","growthForm":"Herb/Shrub/Tree","growthStyle":"..."},"development":{"growthScore":7,"growthRating":"Average Growth","timeToMatureHeight":"90 days","growthSpeed":"Fast/Average/Slow","propagation":"Seed Propagation, Stem Cuttings"},"appearance":{"leaves":{"texture":"Medium","colors":["#4CAF50","#7B1FA2"],"description":"..."},"flowers":{"colors":["#E91E63"],"description":"..."},"fruits":{"description":"..."}},"growingConditions":{"temperature":{"idealCelsius":"21-30","survivesCelsius":"10-35","hardinessZones":"Zone 9-11"},"light":{"lightAmount":"6-8","intensity":"20000-60000 klux","preferredLight":"Full Sun"},"soilWater":{"soilPh":"5.5-7.5","soilTypes":"Universal Soil, Garden Soil","humidity":"60-80%"},"location":{"indoorRooms":"Kitchen, Living Room","windowDistance":"30 cm","outdoorSpots":"Garden, Backyard"}},"careGuides":{"watering":{"spring":"Every 1 week","summer":"Every 2 weeks","fall":"Every 2 weeks","winter":"Every 3 weeks","waterAmount":"Low (Let dry out)"},"pests":{"commonPests":"Aphids, Spider Mites","commonDiseases":"Root Rot, Leaf Spot","resistantTo":"Thrips","attracts":"Bees, Butterflies"}},"taxonomy":{"kingdom":"Plantae","phylum":"Tracheophyta","class":"Magnoliopsida","order":"Solanales","family":"Convolvulaceae","genus":"Ipomoea","scientificName":"Ipomoea batatas"}}`;
+
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5', max_tokens: 2000,
+          messages: [{ role: 'user', content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: prompt }
+          ]}]
+        })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error.message);
+      const text = (data.content || []).map(i => i.text || '').join('');
+      currentPlantData = parseAIResponse(text);
+      if (!currentPlantData) throw new Error('parse');
+    } catch(err) {
+      currentPlantData = null;
+      document.getElementById('plant-info-analyzing').classList.remove('show');
+      overlay.classList.remove('open');
+      showToast(err.message === 'NO_API_KEY' ? t('no_key_title') : t('ai_error_title'));
+      return;
+    }
+
+    renderPlantInfo(currentPlantData);
+    document.getElementById('plant-info-analyzing').classList.remove('show');
+    document.getElementById('plant-info-content').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function closePlantInfo() {
+  document.getElementById('plant-info-modal').classList.remove('open');
+  document.getElementById('plant-info-content').style.display = 'none';
+  document.getElementById('plant-info-analyzing').classList.remove('show');
+}
+
+function renderPlantInfo(p) {
+  // Hero
+  const heroImg = document.getElementById('plant-hero-img');
+  heroImg.src = identifyPhotoDataUrl || '';
+  // Dots (simulate 5 photos)
+  const dotsWrap = document.getElementById('plant-hero-dots');
+  dotsWrap.innerHTML = [0,1,2,3,4].map((i) =>
+    `<span class="${i===0?'active':''}"></span>`).join('');
+
+  // Reset tab
+  identifyAppearTab = 'leaves';
+
+  const gr = p.development || {};
+  const score = gr.growthScore || 7;
+  const circ = Math.PI * 2 * 28; // r=28
+  const offset = circ - (circ * score / 10);
+  const ratingColor = score >= 8 ? '#10B981' : score >= 5 ? '#F59E0B' : '#EF4444';
+
+  const gc = p.growingConditions || {};
+  const cg = p.careGuides || {};
+  const tx = p.taxonomy || {};
+  const ap = p.appearance || {};
+
+  document.getElementById('plant-info-body').innerHTML = `
+    <!-- Name -->
+    <div class="plant-name-row">
+      <div class="plant-sci-name">${esc(p.scientificName || p.commonName || '?')}</div>
+      ${p.commonName ? `<div class="plant-also-known">${t('also_known')} ${esc(p.commonName)}</div>` : ''}
+      ${p.botanicalGenus ? `<div class="plant-botanical">${t('botanical_name')} ${esc(p.botanicalGenus)}</div>` : ''}
+    </div>
+
+    <!-- Description -->
+    <div class="plant-section-title" data-i18n="desc_section">${t('desc_section')}</div>
+    <div class="plant-desc-box">
+      <p class="plant-desc-collapsed" id="plant-desc-text">${esc(p.description || '')}</p>
+      <button class="plant-show-more" onclick="togglePlantDesc()" id="plant-desc-toggle">${t('show_more')}</button>
+    </div>
+    ${p.edibleParts && p.edibleParts !== 'null' ? `
+    <div class="plant-edible-row">
+      <span class="material-icons-round">restaurant_menu</span>
+      ${t('edible_parts')} ${esc(p.edibleParts)}
+    </div>` : ''}
+
+    <!-- General -->
+    <div class="plant-section-title">${t('general_section')}</div>
+    <div class="plant-info-card">
+      ${plantRow(t('natural_habitats'), (p.general||{}).naturalHabitats)}
+      ${plantRow(t('origin_countries'), (p.general||{}).originCountries)}
+      ${plantRow(t('env_benefits'), (p.general||{}).environmentalBenefits)}
+      ${plantRow(t('life_cycle'), (p.general||{}).lifeCycle)}
+      ${plantRow(t('leaf_retention'), (p.general||{}).leafRetention)}
+    </div>
+
+    <!-- Characteristics -->
+    <div class="plant-section-title">${t('characteristics_section')}</div>
+    <div class="plant-info-card">
+      <div class="plant-info-card-header">
+        <span class="material-icons-round">grass</span> ${t('physical_section')}
+      </div>
+      ${plantRow(t('height'), (p.physical||{}).heightCm ? (p.physical.heightCm + ' cm') : '—')}
+      ${plantRow(t('crown_width'), (p.physical||{}).crownWidthCm ? (p.physical.crownWidthCm + ' cm') : '—')}
+      ${plantRow(t('growth_form'), (p.physical||{}).growthForm)}
+      ${plantRow(t('growth_style'), (p.physical||{}).growthStyle)}
+    </div>
+    <div class="plant-info-card">
+      <div class="plant-info-card-header">
+        <span class="material-icons-round">trending_up</span> ${t('development_section')}
+      </div>
+      <div class="growth-ring-row">
+        <div class="growth-ring-wrap">
+          <svg class="growth-ring-svg" viewBox="0 0 72 72">
+            <circle class="growth-ring-bg" cx="36" cy="36" r="28"/>
+            <circle class="growth-ring-fill" cx="36" cy="36" r="28"
+              stroke="${ratingColor}"
+              stroke-dasharray="${circ}"
+              stroke-dashoffset="${offset}"/>
+          </svg>
+          <div class="growth-ring-label">
+            <span class="growth-ring-num" style="color:${ratingColor}">${score}/10</span>
+            <span class="growth-ring-sub">${t('growth_label')}</span>
+          </div>
+        </div>
+        <div class="growth-rate-info">
+          <div class="growth-rate-title">${esc(gr.growthRating || '')}</div>
+          <div class="growth-rate-legend">
+            <div class="growth-legend-item"><div class="growth-legend-dot" style="background:#EF4444"></div>${t('slow_label')}</div>
+            <div class="growth-legend-item"><div class="growth-legend-dot" style="background:#F59E0B"></div>${t('average_label')}</div>
+            <div class="growth-legend-item"><div class="growth-legend-dot" style="background:#10B981"></div>${t('fast_label')}</div>
+          </div>
+        </div>
+      </div>
+      ${plantRow(t('time_mature'), gr.timeToMatureHeight)}
+      ${plantRow(t('growth_speed'), gr.growthSpeed)}
+      ${plantRow(t('propagation'), gr.propagation)}
+    </div>
+
+    <!-- Appearance -->
+    <div class="plant-section-title">${t('appearance_section')}</div>
+    <div class="plant-info-card" style="padding:0 14px 14px;">
+      <div class="appear-tabs">
+        <button class="appear-tab active" id="tab-ap-leaves" onclick="switchAppearTab('leaves')">${t('ap_leaves')}</button>
+        <button class="appear-tab" id="tab-ap-flowers" onclick="switchAppearTab('flowers')">${t('ap_flowers')}</button>
+        <button class="appear-tab" id="tab-ap-fruits" onclick="switchAppearTab('fruits')">${t('ap_fruits')}</button>
+      </div>
+      <div id="appear-tab-content">${renderAppearTabContent('leaves', ap)}</div>
+    </div>
+
+    <!-- Growing Conditions -->
+    <div class="plant-section-title">${t('growing_conditions')}</div>
+    <div class="plant-info-card">
+      <div class="plant-info-card-header"><span class="material-icons-round">thermostat</span> ${t('temperature_section')}</div>
+      ${plantRow(t('temp_ideal'), (gc.temperature||{}).idealCelsius ? gc.temperature.idealCelsius + ' °C' : '—')}
+      ${plantRow(t('temp_survives'), (gc.temperature||{}).survivesCelsius ? gc.temperature.survivesCelsius + ' °C' : '—')}
+      ${plantRow(t('hardiness_zones'), (gc.temperature||{}).hardinessZones)}
+    </div>
+    <div class="plant-info-card">
+      <div class="plant-info-card-header"><span class="material-icons-round">wb_sunny</span> ${t('light_section')}</div>
+      ${plantRow(t('light_amount'), (gc.light||{}).lightAmount)}
+      ${plantRow(t('light_intensity'), (gc.light||{}).intensity)}
+      ${plantRow(t('preferred_light'), (gc.light||{}).preferredLight)}
+    </div>
+    <div class="plant-info-card">
+      <div class="plant-info-card-header"><span class="material-icons-round">water_drop</span> ${t('soil_water_section')}</div>
+      ${plantRow(t('soil_ph'), (gc.soilWater||{}).soilPh)}
+      ${plantRow(t('soil_types'), (gc.soilWater||{}).soilTypes)}
+      ${plantRow(t('humidity'), (gc.soilWater||{}).humidity)}
+    </div>
+    <div class="plant-info-card">
+      <div class="plant-info-card-header"><span class="material-icons-round">place</span> ${t('location_section')}</div>
+      ${plantRow(t('indoor_rooms'), (gc.location||{}).indoorRooms)}
+      ${plantRow(t('window_distance'), (gc.location||{}).windowDistance)}
+      ${plantRow(t('outdoor_spots'), (gc.location||{}).outdoorSpots)}
+    </div>
+
+    <!-- Care Guides -->
+    <div class="plant-section-title">${t('care_guides')}</div>
+    <div class="plant-info-card">
+      <div class="plant-info-card-header"><span class="material-icons-round">opacity</span> ${t('watering_section')}</div>
+      ${plantRow(t('spring'), (cg.watering||{}).spring)}
+      ${plantRow(t('summer'), (cg.watering||{}).summer)}
+      ${plantRow(t('fall'), (cg.watering||{}).fall)}
+      ${plantRow(t('winter'), (cg.watering||{}).winter)}
+      ${plantRow(t('water_amount'), (cg.watering||{}).waterAmount)}
+    </div>
+    <div class="plant-info-card">
+      <div class="plant-info-card-header"><span class="material-icons-round">bug_report</span> ${t('pests_diseases')}</div>
+      ${plantRow(t('common_pests'), (cg.pests||{}).commonPests)}
+      ${plantRow(t('common_diseases'), (cg.pests||{}).commonDiseases)}
+      ${plantRow(t('resistant_to'), (cg.pests||{}).resistantTo)}
+      ${plantRow(t('attracts'), (cg.pests||{}).attracts)}
+    </div>
+
+    <!-- Taxonomy -->
+    <div class="plant-section-title">${t('taxonomy_section')}</div>
+    <div class="plant-info-card">
+      <div class="plant-info-card-header"><span class="material-icons-round">science</span> ${t('classification_section')}</div>
+      ${plantRow(t('tx_kingdom'), tx.kingdom)}
+      ${plantRow(t('tx_phylum'), tx.phylum)}
+      ${plantRow(t('tx_class'), tx.class)}
+      ${plantRow(t('tx_order'), tx.order)}
+      ${plantRow(t('tx_family'), tx.family)}
+      ${plantRow(t('tx_genus'), tx.genus)}
+      <div class="taxonomy-separator"></div>
+      <div class="plant-sci-name-row">
+        <span class="plant-sci-name-key">${t('tx_sci_name')}</span>
+        <span class="plant-sci-name-val">${esc(tx.scientificName || p.scientificName || '')}</span>
+      </div>
+    </div>
+
+    <!-- Have questions? -->
+    <div class="plant-section-title">${t('have_questions')}</div>
+    <div class="ask-botanist-card" onclick="openAIBotanist()">
+      <div class="botanist-avatar">🤖</div>
+      <div class="botanist-info">
+        <div class="botanist-title">${t('ask_botanist')}</div>
+        <div class="botanist-sub">${t('botanist_sub')}</div>
+      </div>
+      <button class="botanist-btn">${t('get_help')}</button>
+    </div>
+
+    <!-- Feedback -->
+    <div class="plant-feedback-card">
+      <div class="plant-feedback-q">${t('feedback_q')}</div>
+      <div class="plant-feedback-btns">
+        <button class="plant-feedback-btn" id="fb-like"    onclick="plantFeedback('like')">👍</button>
+        <button class="plant-feedback-btn" id="fb-dislike" onclick="plantFeedback('dislike')">👎</button>
+      </div>
+    </div>
+
+    <div class="plant-body-spacer"></div>
+  `;
+}
+
+function plantRow(key, val) {
+  if (!val || val === 'null') return '';
+  return `<div class="plant-info-row"><span class="plant-info-key">${key}</span><span class="plant-info-val">${esc(String(val))}</span></div>`;
+}
+
+function renderAppearTabContent(tab, ap) {
+  const data = ap[tab] || {};
+  const colors = data.colors || [];
+  const colorDots = colors.length ? `<div class="color-dots">${colors.map(c=>`<div class="color-dot" style="background:${c}"></div>`).join('')}</div>` : '';
+  return `
+    <div class="plant-info-card-header" style="padding:12px 0 8px;border-bottom:none;">
+      <span class="material-icons-round">local_florist</span> ${tab.charAt(0).toUpperCase()+tab.slice(1)}
+    </div>
+    ${data.texture ? `<div class="plant-info-row"><span class="plant-info-key">${t('texture_label')}</span><span class="plant-info-val">${esc(data.texture)}</span></div>` : ''}
+    ${colorDots ? `<div class="plant-info-row"><span class="plant-info-key">${t('colors_label')}</span>${colorDots}</div>` : ''}
+    ${data.description ? `<p style="font-size:.8rem;color:#9CA3AF;line-height:1.6;padding:6px 0;">${esc(data.description)}</p>` : ''}
+  `;
+}
+
+function switchAppearTab(tab) {
+  identifyAppearTab = tab;
+  ['leaves','flowers','fruits'].forEach(t => {
+    const btn = document.getElementById('tab-ap-'+t);
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  const content = document.getElementById('appear-tab-content');
+  if (content && currentPlantData) {
+    content.innerHTML = renderAppearTabContent(tab, currentPlantData.appearance || {});
+  }
+}
+
+let plantDescExpanded = false;
+function togglePlantDesc() {
+  plantDescExpanded = !plantDescExpanded;
+  const el = document.getElementById('plant-desc-text');
+  const btn = document.getElementById('plant-desc-toggle');
+  if (!el || !btn) return;
+  el.classList.toggle('plant-desc-collapsed', !plantDescExpanded);
+  btn.textContent = plantDescExpanded ? t('show_less') : t('show_more');
+}
+
+function plantFeedback(type) {
+  document.getElementById('fb-like').classList.toggle('liked', type === 'like');
+  document.getElementById('fb-dislike').classList.toggle('disliked', type === 'dislike');
+  showToast(type === 'like' ? t('feedback_thanks') : t('feedback_noted'));
+}
+
+function openAIBotanist() {
+  showToast(t('botanist_coming'));
+}
+
+function addIdentifiedToGarden() {
+  if (!currentPlantData) return;
+  const plant = {
+    id: Date.now().toString(),
+    name: currentPlantData.commonName || currentPlantData.scientificName || 'Unknown Plant',
+    emoji: '🌿',
+    photo: identifyPhotoDataUrl,
+    date: new Date().toLocaleDateString()
+  };
+  const g = getGarden(); g.unshift(plant); saveGarden(g);
+  closePlantInfo();
+  switchTab('garden');
+  showToast(t('plant_added'));
+}
+
+// ══════════════════════════════════
+//  GARDEN
+// ══════════════════════════════════
+const GARDEN_KEY = 'spd_garden';
+function getGarden() {
+  try { return JSON.parse(localStorage.getItem(GARDEN_KEY) || '[]'); } catch { return []; }
+}
+function saveGarden(g) { localStorage.setItem(GARDEN_KEY, JSON.stringify(g)); }
+
+function renderGarden() {
+  const wrap = document.getElementById('garden-plants-wrap');
+  const plants = getGarden();
+  if (!plants.length) {
+    wrap.innerHTML = `
+      <div class="garden-empty">
+        <div class="garden-empty-illustration">🌱</div>
+        <div class="garden-empty-title">${t('garden_empty_title')}</div>
+        <p class="garden-empty-sub">${t('garden_empty_sub')}</p>
+      </div>`;
+    return;
+  }
+  wrap.innerHTML = plants.map(p => `
+    <div class="garden-plant-card" onclick="removeGardenPlant('${p.id}')">
+      <div class="garden-plant-thumb">
+        ${p.photo ? `<img src="${p.photo}" alt="">` : `<span>${p.emoji || '🌿'}</span>`}
+      </div>
+      <div class="garden-plant-info">
+        <div class="garden-plant-name">${esc(p.name)}</div>
+        <div class="garden-plant-added">${t('diagnosed_on')} ${p.date}</div>
+        <div class="garden-plant-health">
+          <span class="material-icons-round">favorite</span> ${t('plant_healthy')}
+        </div>
+      </div>
+      <div class="settings-item-chevron"><span class="material-icons-round">more_vert</span></div>
+    </div>`).join('');
+}
+
+function removeGardenPlant(id) {
+  // Just a tap — do nothing destructive, future: open detail
+}
+
+function openAddPlant() {
+  document.getElementById('add-plant-sheet').classList.add('open');
+  document.getElementById('name-input-section').style.display = 'none';
+  document.getElementById('plant-name-input').value = '';
+}
+function closeAddPlant() {
+  document.getElementById('add-plant-sheet').classList.remove('open');
+}
+function closeAddPlantOutside(e) {
+  if (e.target === document.getElementById('add-plant-sheet')) closeAddPlant();
+}
+
+function showNameInput() {
+  const sec = document.getElementById('name-input-section');
+  sec.style.display = 'block';
+  document.getElementById('plant-name-input').focus();
+}
+
+function addPlantByName() {
+  const name = document.getElementById('plant-name-input').value.trim();
+  if (!name) return;
+  const emojis = ['🌿','🌱','🍀','🌾','🌻','🌹','🌺','🌸','🍃','🎋'];
+  const plant = {
+    id: Date.now().toString(),
+    name,
+    emoji: emojis[Math.floor(Math.random() * emojis.length)],
+    photo: null,
+    date: new Date().toLocaleDateString()
+  };
+  const g = getGarden(); g.unshift(plant); saveGarden(g);
+  closeAddPlant();
+  renderGarden();
+  showToast(t('plant_added'));
+}
+
+function addPlantBySnap() {
+  document.getElementById('plant-snap-input').click();
+}
+
+function handlePlantSnap(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const plant = {
+      id: Date.now().toString(),
+      name: file.name.replace(/\.[^/.]+$/, '') || 'My Plant',
+      emoji: '📸',
+      photo: e.target.result,
+      date: new Date().toLocaleDateString()
+    };
+    const g = getGarden(); g.unshift(plant); saveGarden(g);
+    closeAddPlant();
+    renderGarden();
+    showToast(t('plant_added'));
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ══════════════════════════════════
+//  PREMIUM
+// ══════════════════════════════════
+function openPremium() {
+  document.getElementById('premium-modal').classList.add('open');
+}
+function closePremium() {
+  document.getElementById('premium-modal').classList.remove('open');
+}
+function closePremiumOutside(e) {
+  if (e.target === document.getElementById('premium-modal')) closePremium();
+}
+function selectPlan(plan) {
+  document.getElementById('plan-yearly').classList.toggle('selected', plan === 'yearly');
+  document.getElementById('plan-weekly').classList.toggle('selected', plan === 'weekly');
+}
+function continuePremium() {
+  closePremium();
+  showToast(t('toast_premium'));
+}
+
+// ══════════════════════════════════
+//  SETTINGS ACTIONS
+// ══════════════════════════════════
+function shareApp() {
+  if (navigator.share) {
+    navigator.share({ title: 'Smart Plant Doctor', text: 'Check out this amazing plant disease diagnosis app!', url: window.location.href });
+  } else {
+    navigator.clipboard.writeText(window.location.href).catch(() => {});
+    showToast(t('toast_share'));
+  }
+}
+function rateApp() {
+  showToast(t('toast_rate'));
+}
+
+function showInfoModal(type) {
+  const titleMap = { faq: 'faq_title', privacy: 'privacy_title', terms: 'terms_title' };
+  const contentMap = { faq: 'faq_content', privacy: 'privacy_content', terms: 'terms_content' };
+  document.getElementById('info-modal-title').textContent = t(titleMap[type]);
+  document.getElementById('info-modal-body').innerHTML = t(contentMap[type]);
+  openModal('info-modal');
+}
+
+// ══════════════════════════════════
+//  SEED DEMO DATA (first run)
+// ══════════════════════════════════
+(function seedDemo() {
+  const existing = getHistory();
+  if (existing.length > 0) return;
+  const demos = [
+    {
+      id: '1700000001',
+      disease_name: 'Powdery Mildew',
+      confidence: 78,
+      symptoms: 'White powdery coating, Stunted growth, Distorted leaves',
+      causes: 'High humidity, Poor air circulation',
+      treatment: 'Apply sulfur-based fungicide. Prune heavily affected areas.',
+      prevention: 'Plant in sunny open locations and space plants properly.',
+      photo_uri: null,
+      created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+      notes: 'Applied neem oil spray. Will monitor for 2 weeks.'
+    },
+    {
+      id: '1700000002',
+      disease_name: 'Leaf Blight',
+      confidence: 85,
+      symptoms: 'Brown spots on leaves, Yellowing edges, Wilting',
+      causes: 'Fungal infection, High humidity',
+      treatment: 'Apply fungicide spray every 7 days for 3 weeks.',
+      prevention: 'Avoid overhead watering, ensure good drainage.',
+      photo_uri: null,
+      created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+      notes: ''
+    }
+  ];
+  saveHistory(demos);
+})();
+
+// Apply saved language on boot
+applyLang(currentLang);
+updateApiKeyUI();
+</script>
+</body>
+</html>
